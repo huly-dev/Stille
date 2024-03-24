@@ -5,31 +5,43 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-type CID = 'M' | 'm' | 'l' | 'Z' | 'z'
+export type CID = 'M' | 'm' | 'l' | 'Z' | 'z'
+
+export type Coord = [X: number, Y: number]
 
 export type Command = {
+  d: string
   command: CID
-  coords: number[]
+  coords: Coord[]
 }
 
 export const parsePath = (d: string, out: (command: Command) => void) => {
-  let currentCommand: Command | undefined = undefined
-
+  let currentCommand: CID | undefined = undefined
+  let currentCoords: number[] = []
   let current: string = ''
 
   function flushCoord() {
     if (current === '') return
     if (currentCommand) {
       const coord = parseFloat(current)
-      currentCommand.coords.push(coord)
+      currentCoords.push(coord)
       current = ''
     } else throw new Error('No current command')
   }
 
   function flush(command: CID) {
     flushCoord()
-    if (currentCommand) out(currentCommand)
-    currentCommand = { command, coords: [] }
+    if (currentCommand)
+      out({
+        d,
+        command: currentCommand,
+        coords: currentCoords.reduce((acc, coord, i) => {
+          if (i % 2 === 0) acc.push([coord, currentCoords[i + 1]])
+          return acc
+        }, [] as Coord[]),
+      })
+    currentCommand = command
+    currentCoords = []
     current = ''
   }
 
