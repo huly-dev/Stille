@@ -7,29 +7,40 @@
 
 export type Pt = [x: number, y: number]
 
-type C0 = 'Z' | 'z'
-type C2 = 'M' | 'm' | 'l'
+export type CID = 'M' | 'm' | 'l' | 'Z' | 'z'
 
-export type CID = C0 | C2
+export type CommandName = 'lineto' | 'curveto' | 'shorthand'
 
-type Command0 = {
-  command: C0
-  param?: never
+export type LineTo = {
+  command: 'lineto'
+  dest: Pt
 }
 
-type Command2 = {
-  command: C2
-  param: Pt
+export type Shorthand = {
+  command: 'shorthand'
+  dest: Pt
+  controlPoint: Pt
 }
 
-export type Command = Command0 | Command2
+export type CurveTo = {
+  command: 'curveto'
+  dest: Pt
+  controlPoint: Pt
+  controlPoint2: Pt
+}
+
+export type Command = LineTo | CurveTo | Shorthand
+
+export type PathSegment = {
+  initial: Pt // absolute
+  final: Pt // absolute
+  commands: Command[] // relative
+  closed: boolean
+}
 
 export type ElementName = 'path'
 
-export interface Element<N extends ElementName> {
-  name: N
-}
-
-export interface Path extends Element<'path'> {
-  d: string
+export type Path = {
+  name: 'path'
+  segments: PathSegment[]
 }
