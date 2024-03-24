@@ -5,7 +5,9 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { CID, Command, Path, PathSegment } from './svg'
+import { SAXParser } from 'sax'
+
+import type { CID, Command, Element, Path, PathSegment, SVG } from './svg'
 
 export enum TokenType {
   CID,
@@ -77,7 +79,7 @@ export const tokenize = (d: string): Token[] => {
   return result
 }
 
-export const parse = (d: Token[]): Path => {
+export const parsePath = (d: Token[]): Path => {
   const result: Path = {
     name: 'path',
     segments: [],
@@ -169,5 +171,37 @@ export const parse = (d: Token[]): Path => {
     }
 
     result.segments.push(segment)
+  }
+}
+
+export function parseSVG(svg: string): SVG {
+  const parser = new SAXParser(true)
+
+  let viewBox: number[] | undefined
+  const elements: Element[] = []
+
+  parser.onopentag = (node) => {
+    switch (node.name) {
+      case 'svg':
+        console.log('svg', node)
+        const vb = node.attributes['viewbox'] as string
+        viewBox = vb.split(' ').map((v) => parseFloat(v))
+        break
+      case 'path':
+        const d = node.attributes['d'] as string
+        const tokens = tokenize(d)
+        const path = parsePath(tokens)
+        elements.push(path)
+        break
+    }
+  }
+
+  parser.write(svg).close()
+
+  if (viewBox === undefined) throw new Error('No viewBox found')
+
+  return {
+    viewBox: [viewBox[0], viewBox[1], viewBox[2], viewBox[3]],
+    elements,
   }
 }

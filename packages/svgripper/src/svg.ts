@@ -44,3 +44,10 @@ export type Path = {
   name: 'path'
   segments: PathSegment[]
 }
+
+export type Element = Path
+
+export type SVG = {
+  viewBox: [x: number, y: number, width: number, height: number]
+  elements: Element[]
+}

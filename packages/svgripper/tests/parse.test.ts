@@ -8,7 +8,7 @@
 import { expect, test } from 'bun:test'
 
 import { scale } from '../src/analyze'
-import { TokenType, parse, tokenize } from '../src/parse'
+import { TokenType, parsePath, tokenize } from '../src/parse'
 
 test('tokenize1', () => {
   const d = tokenize('M 0 8 l 1.2 -3.14 z')
@@ -38,7 +38,7 @@ test('tokenize2', () => {
 
 test('parse1', () => {
   const d = tokenize('M 0 8 l 1.2 -3.14 z')
-  const path = parse(d)
+  const path = parsePath(d)
   expect(path.segments.length).toEqual(1)
   const segment = path.segments[0]
   expect(segment.commands.length).toEqual(1)
@@ -46,7 +46,7 @@ test('parse1', () => {
 
 test('parse2', () => {
   const d = tokenize('M988.5 406l-0.5 3.1 0.8 2.9 3.1 0z')
-  const path = parse(d)
+  const path = parsePath(d)
   expect(path.segments.length).toEqual(1)
   const segment = path.segments[0]
   expect(segment.commands.length).toEqual(3)
@@ -56,9 +56,14 @@ test('parse2', () => {
 
 test('scale', () => {
   const d = tokenize('M988.5 406l-0.5 3.1 0.8 2.9 3.1 0z')
-  const path = parse(d)
+  const path = parsePath(d)
   const scaled = scale(path.segments[0].commands, 2, 2)
   expect(scaled[0]).toEqual({ command: 'lineto', dest: [-1, 6.2] })
   expect(scaled[1]).toEqual({ command: 'lineto', dest: [1.6, 5.8] })
   expect(scaled[2]).toEqual({ command: 'lineto', dest: [6.2, 0] })
+})
+
+test('parse SVG', async () => {
+  const svg = await Bun.file(import.meta.dir + '/world.svg').text()
+  console.log(svg)
 })
