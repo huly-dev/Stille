@@ -7,7 +7,7 @@
 
 import type { CID } from './svg'
 
-enum TokenType {
+export enum TokenType {
   CID,
   Number,
 }
@@ -22,7 +22,12 @@ export const tokenize = (d: string): Token[] => {
 
   let currentNumber: string = ''
 
-  const flushNumber = () => result.push({ type: TokenType.Number, value: parseFloat(currentNumber) })
+  const flushNumber = () => {
+    if (currentNumber !== '') {
+      result.push({ type: TokenType.Number, value: parseFloat(currentNumber) })
+      currentNumber = ''
+    }
+  }
 
   for (let i = 0; i < d.length; i++) {
     const c = d[i]
@@ -32,6 +37,7 @@ export const tokenize = (d: string): Token[] => {
       case 'l':
       case 'Z':
       case 'z':
+        flushNumber()
         result.push({ type: TokenType.CID, value: c as CID })
         break
       case '0':
