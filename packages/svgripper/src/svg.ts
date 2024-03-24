@@ -47,7 +47,12 @@ export type Path = {
 
 export type Element = Path
 
+export type ViewBox = {
+  xy: Pt
+  wh: Pt
+}
+
 export type SVG = {
-  viewBox: [x: number, y: number, width: number, height: number]
+  viewBox: ViewBox
   elements: Element[]
 }

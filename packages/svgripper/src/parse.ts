@@ -201,7 +201,10 @@ export function parseSVG(svg: string): SVG {
   if (viewBox === undefined) throw new Error('No viewBox found')
 
   return {
-    viewBox: [viewBox[0], viewBox[1], viewBox[2], viewBox[3]],
+    viewBox: {
+      xy: [viewBox[0], viewBox[1]],
+      wh: [viewBox[2], viewBox[3]],
+    },
     elements,
   }
 }

@@ -5,8 +5,8 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { numberOfBits } from './encode'
-import type { Command, SVG } from './svg'
+import { numberOfBits } from './bits'
+import type { Command, Element, SVG } from './svg'
 
 export const min = (commands: Command[]) =>
   commands.reduce(
@@ -64,3 +64,16 @@ export const analyzeSVG = (svg: SVG) => {
 
   console.log({ segmentsTotal, commandsTotal, totalBits, totalBytes: totalBits / 8, totalAscii: totalBits / 7 })
 }
+
+export const scaleSVG = (svg: SVG, factor: number): SVG => ({
+  viewBox: {
+    xy: svg.viewBox.xy, // only [0, 0] allowed for now
+    wh: svg.viewBox.wh.map((value) => value * factor) as [number, number],
+  },
+  elements: svg.elements.map((element) => ({
+    name: element.name,
+    segments: element.segments.map((segment) => ({
+      commands: scale(segment.commands, factor, factor),
+    })),
+  })) as Element[],
+})

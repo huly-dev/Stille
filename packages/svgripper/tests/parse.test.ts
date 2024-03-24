@@ -8,6 +8,7 @@
 import { expect, test } from 'bun:test'
 
 import { analyzeSVG, scale } from '../src/analyze'
+import { encodeSVG } from '../src/encode'
 import { TokenType, parsePath, parseSVG, tokenize } from '../src/parse'
 
 test('tokenize1', () => {
@@ -72,4 +73,34 @@ test('analyze SVG', async () => {
   const svg = await Bun.file(import.meta.dir + '/world.svg').text()
   const parsed = parseSVG(svg)
   analyzeSVG(parsed)
+})
+
+test('encode SVG', async () => {
+  const svg = await Bun.file(import.meta.dir + '/world.svg').text()
+  const parsed = parseSVG(svg)
+  analyzeSVG(parsed)
+
+  let result = ''
+  let charsWritten = 0
+
+  encodeSVG(parsed, 1600, 6, (char) => {
+    if (char < 26) {
+      result += String.fromCharCode(char + 65)
+    } else if (char < 52) {
+      result += String.fromCharCode(char + 71)
+    } else if (char < 62) {
+      result += String.fromCharCode(char - 4)
+    } else if (char === 62) {
+      result += '+'
+    } else if (char === 63) {
+      result += '/'
+    } else throw new Error('invalid char')
+
+    if (++charsWritten % 76 === 0) {
+      result += '\n'
+    }
+  })
+
+  console.log(result)
+  console.log('charsWritten', charsWritten)
 })
