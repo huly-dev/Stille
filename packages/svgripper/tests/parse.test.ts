@@ -7,8 +7,8 @@
 
 import { expect, test } from 'bun:test'
 
-import { scale } from '../src/analyze'
-import { TokenType, parsePath, tokenize } from '../src/parse'
+import { analyzeSVG, scale } from '../src/analyze'
+import { TokenType, parsePath, parseSVG, tokenize } from '../src/parse'
 
 test('tokenize1', () => {
   const d = tokenize('M 0 8 l 1.2 -3.14 z')
@@ -64,6 +64,12 @@ test('scale', () => {
 })
 
 test('parse SVG', async () => {
+  // const svg = await Bun.file(import.meta.dir + '/world.svg').text()
+  // const _ = parseSVG(svg)
+})
+
+test('analyze SVG', async () => {
   const svg = await Bun.file(import.meta.dir + '/world.svg').text()
-  console.log(svg)
+  const parsed = parseSVG(svg)
+  analyzeSVG(parsed)
 })
