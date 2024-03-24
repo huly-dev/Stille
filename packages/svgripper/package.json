@@ -1,5 +1,5 @@
 {
-  "name": "@huly/svg-tools",
+  "name": "@huly/svgripper",
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {

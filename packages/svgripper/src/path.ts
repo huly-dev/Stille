@@ -13,7 +13,6 @@ export type Command = {
 }
 
 export const parsePath = (d: string, out: (command: Command) => void) => {
-  console.log(d)
   let currentCommand: Command | undefined = undefined
 
   let current: string = ''
