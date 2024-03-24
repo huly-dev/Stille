@@ -7,16 +7,22 @@
 
 export type Pt = [x: number, y: number]
 
-export type CID = 'M' | 'm' | 'l' | 'Z' | 'z'
+type C0 = 'Z' | 'z'
+type C2 = 'M' | 'm' | 'l'
 
-export interface Command<I extends CID, T> {
-  command: I
-  param: T
+export type CID = C0 | C2
+
+type Command0 = {
+  command: C0
+  param?: never
 }
 
-export interface CommandPt<I extends CID> extends Command<I, Pt> {
-  point: Pt
+type Command2 = {
+  command: C2
+  param: Pt
 }
+
+export type Command = Command0 | Command2
 
 export type ElementName = 'path'
 
