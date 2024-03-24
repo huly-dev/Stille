@@ -7,6 +7,7 @@
 
 import { expect, test } from 'bun:test'
 
+import { scale } from '../src/analyze'
 import { TokenType, parse, tokenize } from '../src/parse'
 
 test('tokenize1', () => {
@@ -51,4 +52,13 @@ test('parse2', () => {
   expect(segment.commands.length).toEqual(3)
   expect(segment.commands[0]).toEqual({ command: 'lineto', dest: [-0.5, 3.1] })
   expect(segment.commands[1]).toEqual({ command: 'lineto', dest: [0.8, 2.9] })
+})
+
+test('scale', () => {
+  const d = tokenize('M988.5 406l-0.5 3.1 0.8 2.9 3.1 0z')
+  const path = parse(d)
+  const scaled = scale(path.segments[0].commands, 2, 2)
+  expect(scaled[0]).toEqual({ command: 'lineto', dest: [-1, 6.2] })
+  expect(scaled[1]).toEqual({ command: 'lineto', dest: [1.6, 5.8] })
+  expect(scaled[2]).toEqual({ command: 'lineto', dest: [6.2, 0] })
 })
