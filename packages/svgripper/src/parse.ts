@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { CID, Command } from './svg'
+import type { CID, Command, Path, PathSegment } from './svg'
 
 export enum TokenType {
   CID,
@@ -77,8 +77,11 @@ export const tokenize = (d: string): Token[] => {
   return result
 }
 
-export const parse = (d: Token[]): Command[] => {
-  const result = [] as Command[]
+export const parse = (d: Token[]): Path => {
+  const result: Path = {
+    name: 'path',
+    segments: [],
+  }
 
   const iter = () => {
     let i = 0
@@ -95,42 +98,76 @@ export const parse = (d: Token[]): Command[] => {
     return token.value
   }
 
-  let lastCommand: CID | undefined = undefined
-
-  const flush = (command: Command) => {
-    result.push(command)
-    lastCommand = command.command
-  }
-
-  const nextCommand = () => {
-    const token = i.next()
-    if (token === undefined) return undefined
-    if (token.type === TokenType.CID) return token.value
-    i.unread()
-    return lastCommand
-  }
-
   while (true) {
-    const command = nextCommand()
-    switch (command) {
-      case 'M':
-      case 'm':
-      case 'l':
-        const x = toFloat(i.next())
-        const y = toFloat(i.next())
-        flush({ command, param: [x, y] })
-        break
+    const initial = i.next()
+    if (initial === undefined) return result
+    if (initial.type !== TokenType.CID) throw new Error('Expected a command')
 
-      case 'Z':
-      case 'z':
-        flush({ command })
-        break
+    let relative = false
 
-      case undefined:
-        return result
-
-      default:
-        throw new Error('Unexpected command ' + command)
+    if (initial.value !== 'M') {
+      if (initial.value === 'm') {
+        relative = true
+      } else throw new Error('Expected a move-to command')
     }
+
+    const initialX = toFloat(i.next())
+    const initialY = toFloat(i.next())
+
+    const segment: PathSegment = {
+      initial: [initialX, initialY], // absolute
+      final: [initialX, initialY], // absolute
+      commands: [], // relative
+      closed: false,
+    }
+
+    function push(command: Command, relative: boolean) {
+      if (relative) {
+        segment.commands.push(command)
+        segment.final = [segment.final[0] + command.dest[0], segment.final[1] + command.dest[1]]
+      } else {
+        const delta = [command.dest[0] - segment.final[0], command.dest[1] - segment.final[1]]
+        segment.commands.push({ command: 'lineto', dest: delta })
+        segment.final = command.dest
+      }
+    }
+
+    let done = false
+
+    while (!done) {
+      const next = i.next()
+      if (next === undefined) return result
+
+      if (next.type === TokenType.Number) {
+        // M continuation -> treat as a lineto
+        const x = toFloat(next)
+        const y = toFloat(i.next())
+        push({ command: 'lineto', dest: [x, y] }, relative)
+        continue
+      }
+
+      const command = next.value
+
+      switch (command) {
+        case 'L':
+        case 'l':
+          relative = command === 'l'
+          const x = toFloat(i.next())
+          const y = toFloat(i.next())
+          push({ command: 'lineto', dest: [x, y] }, relative)
+          break
+
+        case 'Z':
+        case 'z':
+          segment.closed = true
+          done = true
+          break
+
+        default:
+          throw new Error('Unexpected command ' + command)
+      }
+    }
+
+    result.segments.push(segment)
   }
 }

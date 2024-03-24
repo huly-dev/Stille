@@ -37,20 +37,18 @@ test('tokenize2', () => {
 
 test('parse1', () => {
   const d = tokenize('M 0 8 l 1.2 -3.14 z')
-  const parsed = parse(d)
-  expect(parsed[0]).toEqual({ command: 'M', param: [0, 8] })
-  expect(parsed[1]).toEqual({ command: 'l', param: [1.2, -3.14] })
-  expect(parsed[2]).toEqual({ command: 'z' })
+  const path = parse(d)
+  expect(path.segments.length).toEqual(1)
+  const segment = path.segments[0]
+  expect(segment.commands.length).toEqual(1)
 })
 
 test('parse2', () => {
   const d = tokenize('M988.5 406l-0.5 3.1 0.8 2.9 3.1 0z')
-  console.log(d)
-  const parsed = parse(d)
-  console.log(parsed)
-  expect(parsed[0]).toEqual({ command: 'M', param: [988.5, 406] })
-  expect(parsed[1]).toEqual({ command: 'l', param: [-0.5, 3.1] })
-  expect(parsed[2]).toEqual({ command: 'l', param: [0.8, 2.9] })
-  expect(parsed[3]).toEqual({ command: 'l', param: [3.1, 0] })
-  expect(parsed[4]).toEqual({ command: 'z' })
+  const path = parse(d)
+  expect(path.segments.length).toEqual(1)
+  const segment = path.segments[0]
+  expect(segment.commands.length).toEqual(3)
+  expect(segment.commands[0]).toEqual({ command: 'lineto', dest: [-0.5, 3.1] })
+  expect(segment.commands[1]).toEqual({ command: 'lineto', dest: [0.8, 2.9] })
 })

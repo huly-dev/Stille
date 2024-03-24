@@ -7,7 +7,7 @@
 
 export type Pt = [x: number, y: number]
 
-export type CID = 'M' | 'm' | 'l' | 'Z' | 'z'
+export type CID = 'M' | 'm' | 'L' | 'l' | 'Z' | 'z'
 
 export type CommandName = 'lineto' | 'curveto' | 'shorthand'
 
