@@ -43,14 +43,17 @@ export function encoder(outBits: number, out: (value: number) => void) {
   }
 }
 
+const MAX_UINT32 = 0xffffffff
+
 /**
  * Determines the minimum number of bits needed to represent a non-negative integer.
  * @param num - The non-negative integer to represent.
  * @returns The minimum number of bits required to represent the input number.
  */
 export function numberOfBits(num: number): number {
+  if (num < 0 || num > MAX_UINT32) throw new Error(`numberOfBits: only uint32 supported: ${num}`)
   let bits = 1
   let value = num >>> 0
-  while ((value >>= 1)) ++bits
+  while ((value >>>= 1)) ++bits
   return bits
 }

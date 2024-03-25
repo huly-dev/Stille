@@ -6,7 +6,7 @@
 //
 
 import { expect, test } from 'bun:test'
-import { encoder } from '../src'
+import { encoder, numberOfBits } from '../src'
 
 test('encoder', () => {
   const output: number[] = []
@@ -38,4 +38,14 @@ test('encoder overflow', () => {
   expect(() => e.writeBits(0b1, -1)).toThrow()
   expect(() => e.writeBits(-1, 5)).toThrow()
   expect(() => e.writeBits(0b1, 4)).not.toThrow()
+})
+
+test('numberOfBits returns correct bit lengths', () => {
+  expect(numberOfBits(0)).toBe(1)
+  expect(numberOfBits(1)).toBe(1)
+  expect(numberOfBits(2)).toBe(2)
+  expect(numberOfBits(255)).toBe(8)
+  expect(numberOfBits(0xffffffff)).toBe(32)
+  expect(() => numberOfBits(0x100000000)).toThrow()
+  expect(() => numberOfBits(-1)).toThrow()
 })
