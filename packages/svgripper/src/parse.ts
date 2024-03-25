@@ -202,10 +202,8 @@ export function parseSVG(svg: string): SVG {
 
   return {
     viewBox: {
-      x: viewBox[0],
-      y: viewBox[1],
-      w: viewBox[2],
-      h: viewBox[3],
+      xy: [viewBox[0], viewBox[1]],
+      wh: [viewBox[2], viewBox[3]],
     },
     elements,
   }

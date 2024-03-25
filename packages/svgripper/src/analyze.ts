@@ -20,7 +20,7 @@ import type { Element, PathSegment, Pt, SVG } from './svg'
 
 const abs = (points: Pt[]) => points.map((point): Pt => [Math.abs(point[0]), Math.abs(point[1])])
 
-const max = (points: Pt[]) =>
+export const max = (points: Pt[]) =>
   points.reduce(
     (acc, point) => {
       if (point[0] > acc.maxX) acc.maxX = point[0]
@@ -28,6 +28,16 @@ const max = (points: Pt[]) =>
       return acc
     },
     { maxX: -Infinity, maxY: -Infinity },
+  )
+
+export const min = (points: Pt[]) =>
+  points.reduce(
+    (acc, point) => {
+      if (point[0] < acc.minX) acc.minX = point[0]
+      if (point[1] < acc.minY) acc.minY = point[1]
+      return acc
+    },
+    { minX: Infinity, minY: Infinity },
   )
 
 export const analyze = (points: Pt[]) => {
@@ -72,42 +82,58 @@ export const analyzeSVG = (svg: SVG) => {
 // const scalePoints = (points: Pt[], factor: number): Pt[] =>
 //   points.map((point) => [point[0] * factor, point[1] * factor])
 
-const scaleSegment =
-  (factor: number) =>
-  (segment: PathSegment): PathSegment => ({
-    initial: [segment.initial[0] * factor, segment.initial[1] * factor],
-    lineTo: segment.lineTo.map((point) => [point[0] * factor, point[1] * factor]),
-    closed: segment.closed,
-  })
+// const scaleSegment =
+//   (factor: number) =>
+//   (segment: PathSegment): PathSegment => ({
+//     initial: [segment.initial[0] * factor, segment.initial[1] * factor],
+//     lineTo: segment.lineTo.map((point) => [point[0] * factor, point[1] * factor]),
+//     closed: segment.closed,
+//   })
 
-export const scaleSVG = (svg: SVG, factor: number): SVG => ({
+export const mapSVG = (svg: SVG, f: (pt: Pt) => Pt): SVG => ({
   viewBox: {
-    x: svg.viewBox.x, // only 0 allowed for now
-    y: svg.viewBox.y, // only 0 allowed for now
-    w: svg.viewBox.w * factor,
-    h: svg.viewBox.h * factor,
+    xy: f(svg.viewBox.xy), // only 0 allowed for now
+    wh: f(svg.viewBox.wh),
   },
   elements: svg.elements.map(
     (element): Element => ({
       name: element.name,
-      segments: element.segments.map(scaleSegment(factor)),
+      segments: element.segments.map(
+        (segment: PathSegment): PathSegment => ({
+          initial: f(segment.initial),
+          lineTo: segment.lineTo.map(f),
+          closed: segment.closed,
+        }),
+      ),
     }),
   ),
 })
+
+export const scaleSVG = (svg: SVG, factor: number): SVG => mapSVG(svg, (pt) => [pt[0] * factor, pt[1] * factor])
+export const roundSVG = (svg: SVG): SVG => mapSVG(svg, (pt) => [Math.round(pt[0]), Math.round(pt[1])])
 
 const splitPoint = (point: Pt): [left: Pt, right: Pt] => {
   const halfX = Math.round(point[0] / 2)
   const halfY = Math.round(point[1] / 2)
   return [
-    [halfX, halfX],
+    [halfX, halfY],
     [point[0] - halfX, point[1] - halfY],
   ]
 }
 
-export const ensureBits = (point: Pt, maxX: number, maxY: number): Pt[] =>
-  point[0] > maxX || point[0] < -maxX || point[1] > maxY || point[1] < -maxY
-    ? splitPoint(point).flatMap((point) => ensureBits(point, maxX, maxY))
-    : [point]
+export const extendPath = (min: Pt, max: Pt): ((point: Pt) => Pt[]) => {
+  const ensureMax = (point: Pt): Pt[] =>
+    point[0] > max[0] || point[0] < min[0] || point[1] > max[1] || point[1] < min[1]
+      ? splitPoint(point).flatMap(ensureMax)
+      : [point]
+
+  return ensureMax
+}
+
+// export const ensureBits = (point: Pt, maxX: number, maxY: number): Pt[] =>
+//   point[0] > maxX || point[0] < -maxX || point[1] > maxY || point[1] < -maxY
+//     ? splitPoint(point).flatMap((point) => ensureBits(point, maxX, maxY))
+//     : [point]
 
 // export const allPaths = (svg: SVG) => svg.elements.map((element) => element.segments.map((segment) => segment.lineTo))
 

@@ -115,6 +115,15 @@ const decode = (encodedData: string, codes: CanonicalHuffmanCodes): number[] => 
   return output
 }
 
+export const countFrequencies = (data: number[], bits: number): number[] =>
+  data.reduce(
+    (freq, symbol) => {
+      freq[symbol]++
+      return freq
+    },
+    new Array(1 << bits).fill(0),
+  )
+
 const huffmanTree = buildHuffmanTree(frequencies)
 const codes = generateCanonicalHuffmanCodes(huffmanTree)
 

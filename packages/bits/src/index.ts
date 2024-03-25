@@ -5,4 +5,5 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
+export { countFrequencies } from './huffman'
 export { encoder, numberOfBits } from './stream'
