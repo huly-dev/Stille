@@ -26,7 +26,6 @@ export type Extended = CurveTo | Shorthand
 
 export type PathSegment = {
   initial: Pt // absolute
-  final: Pt // absolute
   lineTo: Pt[] // relative
   extended?: Pt[] // relative
   closed: boolean
@@ -42,8 +41,10 @@ export type Path = {
 export type Element = Path
 
 export type ViewBox = {
-  xy: Pt
-  wh: Pt
+  x: number
+  y: number
+  w: number
+  h: number
 }
 
 export type SVG = {

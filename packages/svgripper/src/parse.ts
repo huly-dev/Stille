@@ -116,9 +116,10 @@ export const parsePath = (d: Token[]): Path => {
     const initialX = toFloat(i.next())
     const initialY = toFloat(i.next())
 
+    let final = [initialX, initialY] // absolute
+
     const segment: PathSegment = {
       initial: [initialX, initialY], // absolute
-      final: [initialX, initialY], // absolute
       lineTo: [], // relative
       closed: false,
     }
@@ -126,10 +127,10 @@ export const parsePath = (d: Token[]): Path => {
     function push(lineTo: Pt, relative: boolean) {
       if (relative) {
         segment.lineTo.push(lineTo)
-        segment.final = [segment.final[0] + lineTo[0], segment.final[1] + lineTo[1]]
+        final = [final[0] + lineTo[0], final[1] + lineTo[1]]
       } else {
-        segment.lineTo.push([lineTo[0] - segment.final[0], lineTo[1] - segment.final[1]])
-        segment.final = lineTo
+        segment.lineTo.push([lineTo[0] - final[0], lineTo[1] - final[1]])
+        final = lineTo
       }
     }
 
@@ -201,8 +202,10 @@ export function parseSVG(svg: string): SVG {
 
   return {
     viewBox: {
-      xy: [viewBox[0], viewBox[1]],
-      wh: [viewBox[2], viewBox[3]],
+      x: viewBox[0],
+      y: viewBox[1],
+      w: viewBox[2],
+      h: viewBox[3],
     },
     elements,
   }
