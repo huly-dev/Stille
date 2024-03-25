@@ -5,8 +5,8 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
+import { encoder } from '@huly/bits'
 import { analyze, scaleSVG } from './analyze'
-import { encoder } from './bits'
 import type { SVG } from './svg'
 
 export const encodeSVG = (svg: SVG, maxWidth: number, bitsOut: number, out: (value: number) => void) => {

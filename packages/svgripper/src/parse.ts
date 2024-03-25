@@ -7,7 +7,7 @@
 
 import { SAXParser } from 'sax'
 
-import type { CID, Command, Element, Path, PathSegment, SVG } from './svg'
+import type { CID, Element, Path, PathSegment, Pt, SVG } from './svg'
 
 export enum TokenType {
   CID,
@@ -119,18 +119,17 @@ export const parsePath = (d: Token[]): Path => {
     const segment: PathSegment = {
       initial: [initialX, initialY], // absolute
       final: [initialX, initialY], // absolute
-      commands: [], // relative
+      lineTo: [], // relative
       closed: false,
     }
 
-    function push(command: Command, relative: boolean) {
+    function push(lineTo: Pt, relative: boolean) {
       if (relative) {
-        segment.commands.push(command)
-        segment.final = [segment.final[0] + command.dest[0], segment.final[1] + command.dest[1]]
+        segment.lineTo.push(lineTo)
+        segment.final = [segment.final[0] + lineTo[0], segment.final[1] + lineTo[1]]
       } else {
-        const delta = [command.dest[0] - segment.final[0], command.dest[1] - segment.final[1]]
-        segment.commands.push({ command: 'lineto', dest: delta })
-        segment.final = command.dest
+        segment.lineTo.push([lineTo[0] - segment.final[0], lineTo[1] - segment.final[1]])
+        segment.final = lineTo
       }
     }
 
@@ -144,7 +143,7 @@ export const parsePath = (d: Token[]): Path => {
         // M continuation -> treat as a lineto
         const x = toFloat(next)
         const y = toFloat(i.next())
-        push({ command: 'lineto', dest: [x, y] }, relative)
+        push([x, y], relative)
         continue
       }
 
@@ -156,7 +155,7 @@ export const parsePath = (d: Token[]): Path => {
           relative = command === 'l'
           const x = toFloat(i.next())
           const y = toFloat(i.next())
-          push({ command: 'lineto', dest: [x, y] }, relative)
+          push([x, y], relative)
           break
 
         case 'Z':

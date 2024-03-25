@@ -5,5 +5,4 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
- export { encoder, numberOfBits } from './bits';
-
+export { encoder, numberOfBits } from './stream'

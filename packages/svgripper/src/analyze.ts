@@ -5,43 +5,37 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { numberOfBits } from './bits'
-import type { Command, Element, SVG } from './svg'
+import { numberOfBits } from '@huly/bits'
+import type { Element, PathSegment, Pt, SVG } from './svg'
 
-export const min = (commands: Command[]) =>
-  commands.reduce(
-    (acc, command) => {
-      const value = command.dest
-      if (value[0] < acc.minX) acc.minX = value[0]
-      if (value[1] < acc.minY) acc.minY = value[1]
+export const min = (points: Pt[]) =>
+  points.reduce(
+    (acc, point) => {
+      if (point[0] < acc.minX) acc.minX = point[0]
+      if (point[1] < acc.minY) acc.minY = point[1]
       return acc
     },
     { minX: Infinity, minY: Infinity },
   )
 
-export const max = (commands: Command[]) =>
-  commands.reduce(
-    (acc, command) => {
-      const value = command.dest
-      if (value[0] > acc.maxX) acc.maxX = value[0]
-      if (value[1] > acc.maxY) acc.maxY = value[1]
+export const max = (points: Pt[]) =>
+  points.reduce(
+    (acc, point) => {
+      if (point[0] > acc.maxX) acc.maxX = point[0]
+      if (point[1] > acc.maxY) acc.maxY = point[1]
       return acc
     },
     { maxX: -Infinity, maxY: -Infinity },
   )
 
-export const scale = (commands: Command[], factorX: number, factorY: number): Command[] =>
-  commands.map((command) => ({ ...command, dest: [command.dest[0] * factorX, command.dest[1] * factorY] }))
-
-export const add = (commands: Command[], x: number, y: number): Command[] =>
-  commands.map((command) => ({ ...command, dest: [command.dest[0] + x, command.dest[1] + y] }))
-
-export const analyze = (commands: Command[]) => {
-  const { minX, minY } = min(commands)
-  const normalized = add(commands, -minX, -minY)
+export const analyze = (points: Pt[]) => {
+  const { minX, minY } = min(points)
+  const normalized = points.map((point): Pt => [point[0] - minX, point[1] - minY])
   const { maxX, maxY } = max(normalized)
+
   const bitsX = numberOfBits(maxX)
   const bitsY = numberOfBits(maxY)
+
   return {
     bitsX,
     bitsY,
@@ -55,7 +49,7 @@ export const analyze = (commands: Command[]) => {
 export const analyzeSVG = (svg: SVG) => {
   let totalBits = 0
   let segmentsTotal = 0
-  let commandsTotal = 0
+  let pointsTotal = 0
 
   svg.elements.forEach((element) => {
     switch (element.name) {
@@ -63,33 +57,40 @@ export const analyzeSVG = (svg: SVG) => {
         const { segments } = element
         segments.forEach((segment) => {
           segmentsTotal++
-          commandsTotal += segment.commands.length
-          const { commands } = segment
-          const { minX, minY } = min(commands)
-          const normalized = add(commands, -minX, -minY)
-          const { maxX, maxY } = max(normalized)
-          const bitsX = numberOfBits(maxX)
-          const bitsY = numberOfBits(maxY)
-          const segmentTotal = (bitsX + bitsY) * commands.length
-          totalBits += segmentTotal
-          console.log({ len: commands.length, segmentTotal, bitsX, bitsY, maxX, maxY })
+          pointsTotal += segment.lineTo.length
+
+          // const analyzed = analyze(segment.lineTo)
+
+          // console.log({ len: commands.length, segmentTotal, bitsX, bitsY, maxX, maxY })
         })
         break
     }
   })
 
-  console.log({ segmentsTotal, commandsTotal, totalBits, totalBytes: totalBits / 8, totalAscii: totalBits / 7 })
+  // console.log({ segmentsTotal, commandsTotal, totalBits, totalBytes: totalBits / 8, totalAscii: totalBits / 7 })
 }
+
+// const scalePoints = (points: Pt[], factor: number): Pt[] =>
+//   points.map((point) => [point[0] * factor, point[1] * factor])
+
+const scaleSegment =
+  (factor: number) =>
+  (segment: PathSegment): PathSegment => ({
+    initial: [segment.initial[0] * factor, segment.initial[1] * factor],
+    final: [segment.final[0] * factor, segment.final[1] * factor],
+    lineTo: segment.lineTo.map((point) => [point[0] * factor, point[1] * factor]),
+    closed: segment.closed,
+  })
 
 export const scaleSVG = (svg: SVG, factor: number): SVG => ({
   viewBox: {
     xy: svg.viewBox.xy, // only [0, 0] allowed for now
     wh: svg.viewBox.wh.map((value) => value * factor) as [number, number],
   },
-  elements: svg.elements.map((element) => ({
-    name: element.name,
-    segments: element.segments.map((segment) => ({
-      commands: scale(segment.commands, factor, factor),
-    })),
-  })) as Element[],
+  elements: svg.elements.map(
+    (element): Element => ({
+      name: element.name,
+      segments: element.segments.map(scaleSegment(factor)),
+    }),
+  ),
 })

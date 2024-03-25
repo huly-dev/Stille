@@ -1,14 +1,9 @@
 {
   "name": "stille",
   "private": false,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "scripts": {},
   "devDependencies": {
     "prettier": "^3.2.5"
-  },
-  "dependencies": {
-    "sax": "^1.3.0"
   }
 }

@@ -6,7 +6,7 @@
 //
 
 import { expect, test } from 'bun:test'
-import { encoder, numberOfBits } from '../src/bits'
+import { encoder, numberOfBits } from '../src/stream'
 
 test('encoder', () => {
   const output: number[] = []

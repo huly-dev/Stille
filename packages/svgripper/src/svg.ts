@@ -9,32 +9,26 @@ export type Pt = [x: number, y: number]
 
 export type CID = 'M' | 'm' | 'L' | 'l' | 'Z' | 'z'
 
-export type CommandName = 'lineto' | 'curveto' | 'shorthand'
-
-export type LineTo = {
-  command: 'lineto'
-  dest: Pt
-}
+export type ExtendedCommand = 'curveto' | 'shorthand'
 
 export type Shorthand = {
   command: 'shorthand'
-  dest: Pt
   controlPoint: Pt
 }
 
 export type CurveTo = {
   command: 'curveto'
-  dest: Pt
-  controlPoint: Pt
+  controlPoint1: Pt
   controlPoint2: Pt
 }
 
-export type Command = LineTo | CurveTo | Shorthand
+export type Extended = CurveTo | Shorthand
 
 export type PathSegment = {
   initial: Pt // absolute
   final: Pt // absolute
-  commands: Command[] // relative
+  lineTo: Pt[] // relative
+  extended?: Pt[] // relative
   closed: boolean
 }
 
