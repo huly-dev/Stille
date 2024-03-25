@@ -36,6 +36,22 @@ export const scale = (commands: Command[], factorX: number, factorY: number): Co
 export const add = (commands: Command[], x: number, y: number): Command[] =>
   commands.map((command) => ({ ...command, dest: [command.dest[0] + x, command.dest[1] + y] }))
 
+export const analyze = (commands: Command[]) => {
+  const { minX, minY } = min(commands)
+  const normalized = add(commands, -minX, -minY)
+  const { maxX, maxY } = max(normalized)
+  const bitsX = numberOfBits(maxX)
+  const bitsY = numberOfBits(maxY)
+  return {
+    bitsX,
+    bitsY,
+    width: maxX,
+    height: maxY,
+    shiftX: -minX,
+    shiftY: -minY,
+  }
+}
+
 export const analyzeSVG = (svg: SVG) => {
   let totalBits = 0
   let segmentsTotal = 0

@@ -81,26 +81,64 @@ test('encode SVG', async () => {
   analyzeSVG(parsed)
 
   let result = ''
-  let charsWritten = 0
+  let buffer = 1n
+  let bytes = 0
 
-  encodeSVG(parsed, 1600, 6, (char) => {
-    if (char < 26) {
-      result += String.fromCharCode(char + 65)
-    } else if (char < 52) {
-      result += String.fromCharCode(char + 71)
-    } else if (char < 62) {
-      result += String.fromCharCode(char - 4)
-    } else if (char === 62) {
-      result += '+'
-    } else if (char === 63) {
-      result += '/'
-    } else throw new Error('invalid char')
+  let blocksWritten = 0
 
-    if (++charsWritten % 76 === 0) {
-      result += '\n'
+  const Base = 93n
+
+  // 13 / 16
+
+  encodeSVG(parsed, 1024, 8, (char) => {
+    buffer *= 256n
+    buffer += BigInt(char)
+    bytes++
+    if (bytes === 13) {
+      for (let i = 0; i < 16; i++) {
+        const letter = Number(buffer % Base)
+        let c = String.fromCharCode(32 + letter)
+        if (c === '`') c = String.fromCharCode(126)
+        if (c === '\\') c = String.fromCharCode(125)
+        result += c
+        buffer /= Base
+      }
+      buffer = 1n
+      bytes = 0
+
+      if (++blocksWritten % 16 === 0) {
+        result += '\n'
+        blocksWritten = 0
+      }
     }
   })
 
   console.log(result)
-  console.log('charsWritten', charsWritten)
 })
+
+// test('encode SVG 2', () => {
+//   let minRatio = 100
+
+//   let p256 = 1
+//   let p93 = 1
+//   for (let i = 0; i < 100; i++) {
+//     const max256 = 256n ** BigInt(p256)
+//     const max93 = 93n ** BigInt(p93)
+//     if (max93 < max256) {
+//       p93 += 1
+//       continue
+//     }
+
+//     const ratio = p93 / p256
+//     if (ratio < minRatio) {
+//       minRatio = ratio
+//       console.log('new min ratio', minRatio)
+//       console.log(p256, p93)
+//       console.log(max256)
+//       console.log(max93)
+//       console.log()
+//     }
+
+//     p256 += 1
+//   }
+// })

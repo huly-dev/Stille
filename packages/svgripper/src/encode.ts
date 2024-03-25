@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { scaleSVG } from './analyze'
+import { analyze, scaleSVG } from './analyze'
 import { encoder } from './bits'
 import type { SVG } from './svg'
 
@@ -28,4 +28,26 @@ export const encodeSVG = (svg: SVG, maxWidth: number, bitsOut: number, out: (val
   const svb = scaledSVG.viewBox
 
   console.log(`Scaled SVG viewBox: ${svb.wh[0]}x${svb.wh[1]}`)
+
+  scaledSVG.elements.forEach((element) => {
+    switch (element.name) {
+      case 'path':
+        const { segments } = element
+        segments.forEach((segment) => {
+          const { commands } = segment
+          const { bitsX, bitsY, shiftX, shiftY } = analyze(commands)
+          commands.forEach((command) => {
+            const x = Math.round(command.dest[0] + shiftX)
+            const y = Math.round(command.dest[1] + shiftY)
+            if (x !== 0 || y !== 0) {
+              e.writeUInt(x, bitsX)
+              e.writeUInt(y, bitsY)
+            }
+          })
+        })
+        break
+    }
+  })
+
+  e.flush()
 }
