@@ -28,24 +28,15 @@ const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequen
 
 export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
-  // console.log(queue)
 
   while (queue.length > 1) {
     const left = queue.pop()!
     const right = queue.pop()!
+    const mergedNode: HuffmanNode = { frequency: left.frequency + right.frequency, left, right }
 
-    const mergedNode: HuffmanNode = {
-      frequency: left.frequency + right.frequency,
-      left,
-      right,
-    }
-
-    // console.log('before', queue)
     const i = queue.findIndex((node) => node.frequency < mergedNode.frequency)
-    // console.log('i', i)
     if (i === -1) queue.push(mergedNode)
     else queue.splice(i, 0, mergedNode)
-    // console.log('after', queue)
   }
 
   return queue[0]
