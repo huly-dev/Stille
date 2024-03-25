@@ -20,3 +20,5 @@ test('encoder', () => {
   e.flush()
   expect(result).toEqual([0b11101101, 0b1010])
 })
+
+test('encode SVG', () => {})

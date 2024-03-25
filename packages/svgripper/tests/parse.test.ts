@@ -98,7 +98,7 @@ test('encode SVG', async () => {
       for (let i = 0; i < 16; i++) {
         const letter = Number(buffer % Base)
         let c = String.fromCharCode(32 + letter)
-        if (c === '`') c = String.fromCharCode(126)
+        if (c === "'") c = String.fromCharCode(126)
         if (c === '\\') c = String.fromCharCode(125)
         result += c
         buffer /= Base
