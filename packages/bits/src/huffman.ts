@@ -5,7 +5,9 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-type HuffmanNode = {
+import type { BitWriteStream } from './stream'
+
+export type HuffmanNode = {
   symbol?: number
   frequency: number
   left?: HuffmanNode
@@ -20,56 +22,36 @@ type HuffmanCode = {
 
 type HuffmanTree = HuffmanNode
 type CanonicalHuffmanCodes = HuffmanCode[]
-type FrequencyTable = [symbol: number, frequency: number][]
+type FrequencyTable = number[]
 
-// Hardcoded example frequency table for a 4-bit alphabet (0-15)
-const frequencies: FrequencyTable = [
-  [0, 23],
-  [1, 12],
-  [2, 8],
-  [3, 4],
-  [4, 2],
-  [5, 1],
-  [6, 1],
-  [7, 1],
-  [8, 1],
-  [9, 98],
-  [10, 1],
-  [11, 55],
-  [12, 1],
-  [13, 11],
-  [14, 91],
-  [15, 1],
-]
+const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequency, symbol) => ({ symbol, frequency }))
 
-const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
-  const queue: HuffmanNode[] = frequencies
-    .sort((a, b) => b[1] - a[1])
-    .map(([symbol, frequency]) => ({ symbol, frequency }))
+export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
+  const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
+  // console.log(queue)
 
   while (queue.length > 1) {
-    let left = queue.pop()!
-    let right = queue.pop()!
+    const left = queue.pop()!
+    const right = queue.pop()!
 
-    let mergedNode: HuffmanNode = {
+    const mergedNode: HuffmanNode = {
       frequency: left.frequency + right.frequency,
-      left: left,
-      right: right,
+      left,
+      right,
     }
 
-    // Insert the merged node back into the queue, maintaining sorted order by frequency
-    let i = queue.findIndex((node) => node.frequency > mergedNode.frequency)
-    if (i === -1) {
-      queue.push(mergedNode)
-    } else {
-      queue.splice(i, 0, mergedNode)
-    }
+    // console.log('before', queue)
+    const i = queue.findIndex((node) => node.frequency < mergedNode.frequency)
+    // console.log('i', i)
+    if (i === -1) queue.push(mergedNode)
+    else queue.splice(i, 0, mergedNode)
+    // console.log('after', queue)
   }
 
   return queue[0]
 }
 
-const generateCanonicalHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffmanCodes => {
+export const generateHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffmanCodes => {
   const traverse = (node: HuffmanNode, depth: number, value: number, codes: CanonicalHuffmanCodes) => {
     if (node.symbol !== undefined) {
       codes[node.symbol] = { length: depth, value: value }
@@ -79,19 +61,17 @@ const generateCanonicalHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffm
     }
   }
 
-  let codes: CanonicalHuffmanCodes = {}
-  traverse(huffmanTree, 0, 0, codes)
+  const codes: CanonicalHuffmanCodes = []
+  traverse(huffmanTree, 0, 0, [])
   return codes
 }
 
-const encode = (data: number[], codes: CanonicalHuffmanCodes): string => {
-  return data
-    .map((symbol) => {
-      let code = codes[symbol]
-      return code.value.toString(2).padStart(code.length, '0')
-    })
-    .join('')
-}
+export const encode =
+  (codes: CanonicalHuffmanCodes, out: BitWriteStream) =>
+  (symbol: number): void => {
+    const code = codes[symbol]
+    out.writeBits(code.value, code.length)
+  }
 
 const decode = (encodedData: string, codes: CanonicalHuffmanCodes): number[] => {
   const invertedCodes: Record<string, number> = {}
@@ -115,21 +95,8 @@ const decode = (encodedData: string, codes: CanonicalHuffmanCodes): number[] => 
   return output
 }
 
-export const countFrequencies = (data: number[], bits: number): number[] =>
-  data.reduce(
-    (freq, symbol) => {
-      freq[symbol]++
-      return freq
-    },
-    new Array(1 << bits).fill(0),
-  )
-
-const huffmanTree = buildHuffmanTree(frequencies)
-const codes = generateCanonicalHuffmanCodes(huffmanTree)
-
-const dataToEncode = [0, 3, 4, 5, 0, 1, 2] // Example data using the 4-bit alphabet
-const encodedData = encode(dataToEncode, codes)
-console.log(encodedData)
-
-const decodedData = decode(encodedData, codes)
-console.log(decodedData)
+export const countFrequencies = (data: number[], symbols: number): number[] =>
+  data.reduce((freq, symbol) => {
+    freq[symbol]++
+    return freq
+  }, new Array(symbols).fill(0))

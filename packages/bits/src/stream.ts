@@ -5,13 +5,18 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
+export type BitWriteStream = {
+  writeBits(value: number, bits: number): void
+  flushBits(): void
+}
+
 /**
  * Creates an encoder that manages a stream of bits and outputs them in chunks.
  * @param outBits - The number of bits in each output chunk.
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function encoder(outBits: number, out: (value: number) => void) {
+export function encoder(outBits: number, out: (value: number) => void): BitWriteStream {
   let word = 0
   let bit = 0
 
