@@ -1,4 +1,6 @@
-import { buildHuffmanTree, type HuffmanNode } from '../src/huffman'
+import { buildHuffmanTree, type HuffmanTree } from '../src/huffman'
+
+type HuffmanNode = HuffmanTree
 
 function printHuffmanTree(node: HuffmanNode, depth: number = 0, prefix: string = '') {
   if (node.symbol !== undefined) {

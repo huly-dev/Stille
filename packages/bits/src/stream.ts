@@ -16,7 +16,7 @@ export type BitWriteStream = {
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function encoder(outBits: number, out: (value: number) => void): BitWriteStream {
+export function createBitWriteStream(outBits: number, out: (value: number) => void): BitWriteStream {
   let word = 0
   let bit = 0
 

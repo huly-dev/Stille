@@ -5,5 +5,5 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
-export { countFrequencies } from './huffman'
-export { encoder, numberOfBits } from './stream'
+export { buildHuffmanTree, countFrequencies, createHuffmanEncoder, generateHuffmanCodes } from './huffman'
+export { createBitWriteStream, numberOfBits } from './stream'

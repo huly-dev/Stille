@@ -7,9 +7,9 @@
 
 import type { BitWriteStream } from './stream'
 
-export type HuffmanNode = {
-  symbol?: number
+type HuffmanNode = {
   frequency: number
+  symbol?: number
   left?: HuffmanNode
   right?: HuffmanNode
   // No need for a code property since we'll be dealing with canonical Huffman codes
@@ -20,7 +20,7 @@ type HuffmanCode = {
   value: number
 }
 
-type HuffmanTree = HuffmanNode
+export type HuffmanTree = HuffmanNode
 type CanonicalHuffmanCodes = HuffmanCode[]
 type FrequencyTable = number[]
 
@@ -44,20 +44,19 @@ export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
 
 export const generateHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffmanCodes => {
   const traverse = (node: HuffmanNode, depth: number, value: number, codes: CanonicalHuffmanCodes) => {
-    if (node.symbol !== undefined) {
-      codes[node.symbol] = { length: depth, value: value }
-    } else {
+    if (node.symbol !== undefined) codes[node.symbol] = { length: depth, value: value }
+    else {
       if (node.left) traverse(node.left, depth + 1, value << 1, codes)
       if (node.right) traverse(node.right, depth + 1, (value << 1) | 1, codes)
     }
   }
 
   const codes: CanonicalHuffmanCodes = []
-  traverse(huffmanTree, 0, 0, [])
+  traverse(huffmanTree, 0, 0, codes)
   return codes
 }
 
-export const encode =
+export const createHuffmanEncoder =
   (codes: CanonicalHuffmanCodes, out: BitWriteStream) =>
   (symbol: number): void => {
     const code = codes[symbol]
