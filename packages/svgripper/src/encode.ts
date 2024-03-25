@@ -34,14 +34,14 @@ export const encodeSVG = (svg: SVG, maxWidth: number, bitsOut: number, out: (val
       case 'path':
         const { segments } = element
         segments.forEach((segment) => {
-          const { commands } = segment
-          const { bitsX, bitsY, shiftX, shiftY } = analyze(commands)
-          commands.forEach((command) => {
-            const x = Math.round(command.dest[0] + shiftX)
-            const y = Math.round(command.dest[1] + shiftY)
+          const lineTo = segment.lineTo
+          const { bitsX, bitsY, shiftX, shiftY } = analyze(lineTo)
+          lineTo.forEach((point) => {
+            const x = Math.round(point[0] + shiftX)
+            const y = Math.round(point[1] + shiftY)
             if (x !== 0 || y !== 0) {
-              e.writeUInt(x, bitsX)
-              e.writeUInt(y, bitsY)
+              e.writeBits(x, bitsX)
+              e.writeBits(y, bitsY)
             }
           })
         })
@@ -49,5 +49,5 @@ export const encodeSVG = (svg: SVG, maxWidth: number, bitsOut: number, out: (val
     }
   })
 
-  e.flush()
+  e.flushBits()
 }
