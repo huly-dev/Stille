@@ -5,38 +5,52 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
+/**
+ * Creates an encoder that manages a stream of bits and outputs them in chunks.
+ * @param outBits - The number of bits in each output chunk.
+ * @param out - A callback function to handle the output of each chunk.
+ * @returns Bits encoder with `writeBits` and `flushBits` methods.
+ */
 export function encoder(outBits: number, out: (value: number) => void) {
-  let word: number = 0
-  let bit: number = 0
+  let word = 0
+  let bit = 0
 
   return {
-    writeUInt(value: number, bits: number) {
-      if (value < 0) throw new Error('Value must be non-negative')
-      if (bits < 0 || bits > outBits) throw new Error('Invalid number of bits')
+    writeBits(value: number, bits: number) {
+      if (value < 0) throw new Error(`encoder: negaive value: ${value}`)
+      if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
 
-      for (let fit = outBits - bit; bits > fit; fit = outBits - bit) {
+      while (bits > 0) {
+        const fit = outBits - bit
         const toFit = value & ((1 << fit) - 1)
         word |= toFit << bit
-        value >>>= fit
-        bit += fit
-        bits -= fit
-        out(word)
-        bit = word = 0
+        if (bits > fit) {
+          out(word)
+          bit = word = 0
+          value >>>= fit
+          bits -= fit
+        } else {
+          bit += bits
+          break
+        }
       }
-      word |= value << bit
-      bit += bits
     },
-    flush() {
-      if (bit > 0) {
-        out(word)
-        bit = word = 0
-      }
+
+    flushBits() {
+      if (bit) out(word)
+      bit = word = 0
     },
   }
 }
 
+/**
+ * Determines the minimum number of bits needed to represent a non-negative integer.
+ * @param num - The non-negative integer to represent.
+ * @returns The minimum number of bits required to represent the input number.
+ */
 export function numberOfBits(num: number): number {
-  const i = Math.ceil(num)
-  if (i === 0) return 1
-  return Math.floor(Math.log2(i)) + 1
+  let bits = 1
+  let value = num >>> 0
+  while ((value >>= 1)) ++bits
+  return bits
 }

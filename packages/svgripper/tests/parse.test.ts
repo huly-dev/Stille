@@ -113,7 +113,7 @@ test('encode SVG', async () => {
     }
   })
 
-  console.log(result)
+  // console.log(result)
 })
 
 // test('encode SVG 2', () => {
