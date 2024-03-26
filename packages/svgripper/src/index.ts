@@ -1,4 +1,4 @@
-export { $, mapSVG, mul, round } from './math'
-export { parseSVG } from './parse'
+export { mapSVG, mul, reduceSimilarVectors, round } from './math'
+export { getPathsSVG, parseSVG } from './parse'
 export { type Pt } from './svg'
 

@@ -207,3 +207,8 @@ export function parseSVG(svg: string): SVG {
     elements,
   }
 }
+
+////
+
+export const getPathsSVG = (svg: SVG) =>
+  svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))

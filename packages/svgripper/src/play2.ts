@@ -1,13 +1,13 @@
 import {
-    buildHuffmanTree,
-    countFrequencies,
-    createBitWriteStream,
-    createHuffmanEncoder,
-    encodeBaseX,
-    generateHuffmanCodes,
-    numberOfBits,
+  buildHuffmanTree,
+  countFrequencies,
+  createBitWriteStream,
+  createHuffmanEncoder,
+  encodeBaseX,
+  generateHuffmanCodes,
+  numberOfBits,
 } from '@huly/bits'
-import { allPaths, extendPath, max, min, roundSVG, scaleSVG, sum } from './analyze'
+import { extendPath, getPathsSVG, max, min, roundSVG, scaleSVG, sum } from './analyze'
 import { parseSVG } from './parse'
 import type { Pt } from './svg'
 
@@ -16,10 +16,10 @@ const svgText = await Bun.file(import.meta.dir + '/../tests/world.svg').text()
 const svg = parseSVG(svgText)
 const svgInt = roundSVG(scaleSVG(svg, 20000 / 2000))
 
-const svgLines = allPaths(svg).flat()
+const svgLines = getPathsSVG(svg).flat()
 console.log(svgLines.length, svgLines[100])
 
-const intLines = allPaths(svgInt).flat()
+const intLines = getPathsSVG(svgInt).flat()
 console.log(intLines.length, intLines[100])
 
 const sumSvg = sum(svgLines)
