@@ -1,10 +1,11 @@
 import {
-  buildHuffmanTree,
-  countFrequencies,
-  createBitWriteStream,
-  createHuffmanEncoder,
-  generateHuffmanCodes,
-  numberOfBits,
+    buildHuffmanTree,
+    countFrequencies,
+    createBitWriteStream,
+    createHuffmanEncoder,
+    encodeBaseX,
+    generateHuffmanCodes,
+    numberOfBits,
 } from '@huly/bits'
 import { allPaths, extendPath, max, min, roundSVG, scaleSVG, sum } from './analyze'
 import { parseSVG } from './parse'
@@ -26,43 +27,59 @@ const sumInt = sum(intLines)
 
 console.log({ sumSvg, sumInt })
 
-function countBytes(max: number) {
-  const int2Lines = intLines.flatMap(extendPath([-max, -max], [max - 1, max - 1]))
-  const verify = sum(int2Lines)
-  const length = int2Lines.length
-  const bits = numberOfBits(max)
-  const size = Math.ceil((length * bits * 2) / 8)
+function analyze(cut: number) {
+  const extended = intLines.flatMap(extendPath([-cut, -cut], [cut, cut]))
+  const verify = sum(extended)
+  const length = extended.length * 2
+  const estimated = (length * numberOfBits(2 * cut)) / 8
 
-  console.log({ max, verify, length, bits, size })
-  return int2Lines
+  console.log({ cut, verify, length, estimated })
+
+  const unsigned = extended.map((point): Pt => [point[0] + cut, point[1] + cut]) // [0..2*cut]
+  console.log(max(unsigned), min(unsigned))
+
+  const freq = countFrequencies(unsigned.flat(), 2 * cut + 1)
+  console.log('freq', freq.length)
+
+  const huffmanTree = buildHuffmanTree(freq)
+  const codes = generateHuffmanCodes(huffmanTree)
+
+  console.log('codes.length', codes.length)
+
+  let bytesWritten = 0
+
+  const result: number[] = []
+
+  const bitWriteStream = createBitWriteStream(16, (x) => {
+    result.push(x & 0xff)
+    result.push((x >> 8) & 0xff)
+    bytesWritten++
+  })
+
+  const huffmanEncoder = createHuffmanEncoder(codes, bitWriteStream)
+  unsigned.flat().forEach((point) => huffmanEncoder(point))
+
+  console.log({ bytesWritten: bytesWritten * 2 })
+
+  return result
 }
 
-countBytes(256)
-countBytes(128)
-const i64 = countBytes(64)
-countBytes(32)
-countBytes(16)
+const compressed = analyze(255)
 
-const uint = i64.map((point): Pt => [point[0] + 64, point[1] + 64])
-console.log(max(uint), min(uint))
+let outString = ''
+let outBytes = 0
 
-const freq = countFrequencies(uint.flat(), 128)
-console.log(freq, freq.length)
-
-const huffmanTree = buildHuffmanTree(freq)
-const codes = generateHuffmanCodes(huffmanTree)
-
-console.log('codes.length', codes.length)
-
-let bytesWritten = 0
-
-const bitWriteStream = createBitWriteStream(32, (_) => {
-  bytesWritten++
+const encoder = encodeBaseX(94, 13, 16, (x) => {
+  outString += String.fromCharCode(x + 32)
+  if (++outBytes % 200 === 0) outString += '\n'
 })
 
-const huffmanEncoder = createHuffmanEncoder(codes, bitWriteStream)
-uint.flat().forEach((point) => huffmanEncoder(point))
+compressed.forEach((x) => encoder.writeByte(x))
+encoder.flush()
 
-console.log({ bytesWritten: bytesWritten * 4 })
+console.log(outString)
 
-// printHuffmanTree(huffmanTree)
+// countBytes(128)
+// const i64 = analyze(64)
+// countBytes(32)
+// countBytes(16)
