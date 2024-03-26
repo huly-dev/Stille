@@ -1,4 +1,10 @@
-import { countFrequencies } from '@huly/bits'
+import {
+  buildHuffmanTree,
+  countFrequencies,
+  createBitWriteStream,
+  createHuffmanEncoder,
+  generateHuffmanCodes,
+} from '@huly/bits'
 import { getPathsSVG, mapSVG, mul, parseSVG, round, type Pt } from 'svgripper'
 import { max, min } from 'svgripper/src/analyze'
 import { bounds, reduceVectors, sum } from 'svgripper/src/math'
@@ -74,9 +80,12 @@ export async function convert(file: string, log: (message: string) => void, opti
   const { min, box } = bounds(pathScaled)
   log(`bounding box: min ${min}, box ${box}]`)
 
-  const degree = options.degree
-  let reduced = reduceVectors(pathScaled, degree)
-  log(`reduced to ${reduced.length} points us, using +/-${degree} degree similarity`)
+  // const degree = options.degree
+  // const reduced = reduceVectors(pathScaled, degree)
+  // log(`reduced to ${reduced.length} points using ${degree} degree similarity`)
+
+  const reduced = pathScaled.filter((pt) => pt[0] !== 0 || pt[1] !== 0)
+  log(`reduced to ${reduced.length} points`)
 
   function compress(points: Pt[]) {
     const { min, box } = bounds(points)
@@ -88,6 +97,27 @@ export async function convert(file: string, log: (message: string) => void, opti
 
     const freq = countFrequencies(normalized, alphabet)
     log(`frequencies: ${freq}`)
+
+    const huffmanTree = buildHuffmanTree(freq)
+    const codes = generateHuffmanCodes(huffmanTree)
+
+    console.log('codes.length', codes)
+
+    let bytesWritten = 0
+
+    const result: number[] = []
+
+    const bitWriteStream = createBitWriteStream(16, (x) => {
+      result.push(x & 0xff)
+      result.push((x >> 8) & 0xff)
+      bytesWritten++
+    })
+
+    const huffmanEncoder = createHuffmanEncoder(codes, bitWriteStream)
+    normalized.forEach((point) => huffmanEncoder(point))
+    bitWriteStream.flushBits()
+
+    console.log({ bytesWritten: bytesWritten * 2 })
   }
 
   compress(reduced)
