@@ -54,3 +54,20 @@ export function reduceVectors(vectors: Pt[], sameAngle: number): Pt[] {
 
   return result
 }
+
+export const bounds = (points: Pt[]) => {
+  const { minX, minY, maxX, maxY } = points.reduce(
+    (acc, point) => {
+      if (point[0] > acc.maxX) acc.maxX = point[0]
+      if (point[1] > acc.maxY) acc.maxY = point[1]
+      if (point[0] < acc.minX) acc.minX = point[0]
+      if (point[1] < acc.minY) acc.minY = point[1]
+      return acc
+    },
+    { maxX: -Infinity, maxY: -Infinity, minX: Infinity, minY: Infinity },
+  )
+  return {
+    min: [minX, minY] as Pt,
+    box: [maxX - minX, maxY - minY] as Pt,
+  }
+}

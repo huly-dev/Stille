@@ -1,5 +1,7 @@
+import { countFrequencies } from '@huly/bits'
 import { getPathsSVG, mapSVG, mul, parseSVG, round, type Pt } from 'svgripper'
-import { reduceVectors, sum } from 'svgripper/src/math'
+import { max, min } from 'svgripper/src/analyze'
+import { bounds, reduceVectors, sum } from 'svgripper/src/math'
 
 type Options = {
   output?: string
@@ -62,21 +64,32 @@ export async function convert(file: string, log: (message: string) => void, opti
   })
 
   const pathScaled = getPathsSVG(scaled).flat()
+  const pathOrignal = getPathsSVG(svg).flat()
   log(`${pathScaled.length} coordinates in draw commands`)
 
-  const pathOrignal = getPathsSVG(svg).flat()
   const finalOrignal = sum(pathOrignal)
   const finalScaled = sum(pathScaled)
   log(`verifying final points... original: ${finalOrignal}, rendered: ${finalScaled}`)
 
-  // const withoutNoops = pathScaled.filter((pt) => pt[0] !== 0 || pt[1] !== 0)
-  // log(`removed ${pathScaled.length - withoutNoops.length} noops, ${withoutNoops.length} points remaining`)
-
-  // withoutNoops.forEach((pt) => console.log(`[${pt[0]}, ${pt[1]}],`))
+  const { min, box } = bounds(pathScaled)
+  log(`bounding box: min ${min}, box ${box}]`)
 
   const degree = options.degree
   let reduced = reduceVectors(pathScaled, degree)
   log(`reduced to ${reduced.length} points us, using +/-${degree} degree similarity`)
 
-  // reduced.forEach((pt) => console.log(`[${pt[0]}, ${pt[1]}]`))
+  const rBounds = bounds(pathScaled)
+  log(`reduced bounding box: min ${rBounds.min}, box ${rBounds.box}]`)
+
+  function compress(data: number[], maxSymbols: number) {
+    const alphabet = Math.max(box[0], box[1]) + 1
+
+    const normalized = pathScaled.flatMap((pt) => [pt[0] - min[0], pt[1] - min[1]])
+    log(`normalized to ${alphabet} symbols in alphabet`)
+
+    const freq = countFrequencies(data, symbols)
+    log(`frequencies: ${freq}`)
+  }
+
+  compress(reduced, alphabet)
 }
