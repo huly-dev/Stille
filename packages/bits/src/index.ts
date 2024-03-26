@@ -6,5 +6,11 @@
  */
 
 export { encodeBaseX } from './basex'
-export { buildHuffmanTree, countFrequencies, createHuffmanEncoder, generateHuffmanCodes } from './huffman'
-export { createBitWriteStream, numberOfBits } from './stream'
+export {
+  buildHuffmanTree,
+  countFrequencies,
+  createHuffmanEncoder,
+  generateHuffmanCodes,
+  type HuffmanCodes,
+} from './huffman'
+export { createBitWriteStream, numberOfBits, type BitWriteStream } from './stream'

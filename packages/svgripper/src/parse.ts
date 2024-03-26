@@ -200,15 +200,13 @@ export function parseSVG(svg: string): SVG {
   if (viewBox === undefined) throw new Error('No viewBox found')
 
   return {
-    viewBox: {
-      xy: [viewBox[0], viewBox[1]],
-      wh: [viewBox[2], viewBox[3]],
-    },
+    xy: [viewBox[0], viewBox[1]],
+    wh: [viewBox[2], viewBox[3]],
     elements,
   }
 }
 
 ////
 
-export const getPathsSVG = (svg: SVG) =>
-  svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))
+// export const getSegmentD = (svg: SVG) =>
+//   svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))

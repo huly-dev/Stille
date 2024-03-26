@@ -132,9 +132,6 @@ export const extendPath = (min: Pt, max: Pt): ((point: Pt) => Pt[]) => {
 
 // export const allPaths = (svg: SVG) => svg.elements.map((element) => element.segments.map((segment) => segment.lineTo))
 
-export const allPaths = (svg: SVG) =>
-  svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))
-
 export const sum = (points: Pt[]): Pt => points.reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]])
 
 export const isEqual = (a: SVG, b: SVG): boolean => {

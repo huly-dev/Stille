@@ -5,49 +5,31 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { encoder } from '@huly/bits'
-import { analyze, scaleSVG } from './analyze'
+import { createHuffmanEncoder, type BitWriteStream, type HuffmanCodes } from '@huly/bits'
 import type { SVG } from './svg'
 
-export const encodeSVG = (svg: SVG, maxWidth: number, bitsOut: number, out: (value: number) => void) => {
-  const e = encoder(bitsOut, out)
+const MAX_ABSOLUTE_BITS = 13
 
-  console.log('Encoding SVG ...')
+export const encodeSVGR = (svg: SVG, codes: HuffmanCodes, out: BitWriteStream) => {
+  const huffman = createHuffmanEncoder(codes, out)
 
-  if (svg.viewBox.xy[0] !== 0 || svg.viewBox.xy[1] !== 0) throw new Error('ViewBox must start at 0, 0')
+  // Write viewBox. We're limiting viewbox to 8192x8192, so we can encode it in 13 bits.'
+  out.writeBits(svg.wh[0], MAX_ABSOLUTE_BITS)
+  out.writeBits(svg.wh[1], MAX_ABSOLUTE_BITS)
 
-  console.log(`SVG viewBox: ${svg.viewBox}`)
-
-  const factor = maxWidth / svg.viewBox.wh[0]
-  const maxHeight = svg.viewBox.wh[1] * factor
-
-  console.log(`Scaling SVG by ${factor} to ${maxWidth}x${maxHeight}`)
-
-  const scaledSVG = scaleSVG(svg, factor)
-
-  const svb = scaledSVG.viewBox
-
-  console.log(`Scaled SVG viewBox: ${svb.wh[0]}x${svb.wh[1]}`)
-
-  scaledSVG.elements.forEach((element) => {
+  // Write elements
+  svg.elements.forEach((element) => {
     switch (element.name) {
       case 'path':
-        const { segments } = element
-        segments.forEach((segment) => {
-          const lineTo = segment.lineTo
-          const { bitsX, bitsY, shiftX, shiftY } = analyze(lineTo)
-          lineTo.forEach((point) => {
-            const x = Math.round(point[0] + shiftX)
-            const y = Math.round(point[1] + shiftY)
-            if (x !== 0 || y !== 0) {
-              e.writeBits(x, bitsX)
-              e.writeBits(y, bitsY)
-            }
-          })
+        element.segments.forEach((segment) => {
+          const initial = segment.initial
+          out.writeBits(initial[0], MAX_ABSOLUTE_BITS)
+          out.writeBits(initial[1], MAX_ABSOLUTE_BITS)
+          segment.lineTo.flat().forEach((x) => huffman(x))
         })
         break
+      default:
+        throw new Error(`Unsupported element: ${element.name}`)
     }
   })
-
-  e.flushBits()
 }

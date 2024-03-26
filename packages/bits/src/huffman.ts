@@ -12,7 +12,6 @@ type HuffmanNode = {
   symbol?: number
   left?: HuffmanNode
   right?: HuffmanNode
-  // No need for a code property since we'll be dealing with canonical Huffman codes
 }
 
 type HuffmanCode = {
@@ -21,7 +20,7 @@ type HuffmanCode = {
 }
 
 export type HuffmanTree = HuffmanNode
-type CanonicalHuffmanCodes = HuffmanCode[]
+export type HuffmanCodes = HuffmanCode[]
 type FrequencyTable = number[]
 
 const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequency, symbol) => ({ symbol, frequency }))
@@ -42,8 +41,8 @@ export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   return queue[0]
 }
 
-export const generateHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffmanCodes => {
-  const traverse = (node: HuffmanNode, depth: number, value: number, codes: CanonicalHuffmanCodes) => {
+export const generateHuffmanCodes = (huffmanTree: HuffmanTree): HuffmanCodes => {
+  const traverse = (node: HuffmanNode, depth: number, value: number, codes: HuffmanCodes) => {
     if (node.symbol !== undefined) codes[node.symbol] = { length: depth, value: value }
     else {
       if (node.left) traverse(node.left, depth + 1, value << 1, codes)
@@ -51,19 +50,19 @@ export const generateHuffmanCodes = (huffmanTree: HuffmanTree): CanonicalHuffman
     }
   }
 
-  const codes: CanonicalHuffmanCodes = []
+  const codes: HuffmanCodes = []
   traverse(huffmanTree, 0, 0, codes)
   return codes
 }
 
 export const createHuffmanEncoder =
-  (codes: CanonicalHuffmanCodes, out: BitWriteStream) =>
+  (codes: HuffmanCodes, out: BitWriteStream) =>
   (symbol: number): void => {
     const code = codes[symbol]
     out.writeBits(code.value, code.length)
   }
 
-const decode = (encodedData: string, codes: CanonicalHuffmanCodes): number[] => {
+const decode = (encodedData: string, codes: HuffmanCodes): number[] => {
   const invertedCodes: Record<string, number> = {}
   Object.entries(codes).forEach(([symbol, code]) => {
     const bitString = code.value.toString(2).padStart(code.length, '0')

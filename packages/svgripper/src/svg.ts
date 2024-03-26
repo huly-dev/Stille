@@ -6,9 +6,7 @@
 //
 
 export type Pt = [x: number, y: number]
-
 export type CID = 'M' | 'm' | 'L' | 'l' | 'Z' | 'z'
-
 export type ExtendedCommand = 'curveto' | 'shorthand'
 
 export type Shorthand = {
@@ -24,7 +22,7 @@ export type CurveTo = {
 
 export type Extended = CurveTo | Shorthand
 
-export type PathSegment = {
+type PathSegment = {
   initial: Pt // absolute
   lineTo: Pt[] // relative
   extended?: Pt[] // relative
@@ -34,18 +32,14 @@ export type PathSegment = {
 export type ElementName = 'path'
 
 export type Path = {
-  name: 'path'
-  segments: PathSegment[]
+  readonly name: 'path'
+  readonly segments: PathSegment[]
 }
 
 export type Element = Path
 
-export type ViewBox = {
-  xy: Pt
-  wh: Pt
-}
-
 export type SVG = {
-  viewBox: ViewBox
-  elements: Element[]
+  readonly xy: Pt
+  readonly wh: Pt
+  readonly elements: Element[]
 }

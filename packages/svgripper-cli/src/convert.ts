@@ -101,8 +101,6 @@ export async function convert(file: string, log: (message: string) => void, opti
     const huffmanTree = buildHuffmanTree(freq)
     const codes = generateHuffmanCodes(huffmanTree)
 
-    console.log('codes.length', codes.length)
-
     let bytesWritten = 0
 
     const result: number[] = []
@@ -117,7 +115,7 @@ export async function convert(file: string, log: (message: string) => void, opti
     normalized.forEach((point) => huffmanEncoder(point))
     bitWriteStream.flushBits()
 
-    console.log({ bytesWritten: bytesWritten * 2 })
+    log(`bytesWritten: ${bytesWritten * 2}`)
   }
 
   compress(reduced)
