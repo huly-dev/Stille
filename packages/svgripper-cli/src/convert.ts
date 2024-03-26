@@ -78,18 +78,17 @@ export async function convert(file: string, log: (message: string) => void, opti
   let reduced = reduceVectors(pathScaled, degree)
   log(`reduced to ${reduced.length} points us, using +/-${degree} degree similarity`)
 
-  const rBounds = bounds(pathScaled)
-  log(`reduced bounding box: min ${rBounds.min}, box ${rBounds.box}]`)
-
-  function compress(data: number[], maxSymbols: number) {
+  function compress(points: Pt[]) {
+    const { min, box } = bounds(points)
+    log(`reduced bounding box: min ${min}, box ${box}]`)
     const alphabet = Math.max(box[0], box[1]) + 1
 
-    const normalized = pathScaled.flatMap((pt) => [pt[0] - min[0], pt[1] - min[1]])
+    const normalized = points.flatMap((pt) => [pt[0] - min[0], pt[1] - min[1]])
     log(`normalized to ${alphabet} symbols in alphabet`)
 
-    const freq = countFrequencies(data, symbols)
+    const freq = countFrequencies(normalized, alphabet)
     log(`frequencies: ${freq}`)
   }
 
-  compress(reduced, alphabet)
+  compress(reduced)
 }
