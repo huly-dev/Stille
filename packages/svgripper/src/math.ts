@@ -26,56 +26,31 @@ export const mapSVG = (svg: SVG, f: F): SVG => ({
   ),
 })
 
-// export function reduceSimilarVectors(vectors: Pt[]): Pt[] {
-//   return vectors.reduce((acc: Pt[], current: Pt, index: number) => {
-//     if (index === 0) {
-//       acc.push(current)
-//       return acc
-//     }
+const k = 180 / Math.PI
 
-//     const last = acc[acc.length - 1]
-//     if (last[0] === current[0] && last[1] === current[1]) {
-//       // If the current vector is the same as the last, add them together
-//       acc[acc.length - 1] = [last[0] + current[0], last[1] + current[1]]
-//     } else {
-//       // Otherwise, push the current vector to the accumulator
-//       acc.push(current)
-//     }
+export function reduceVectors(vectors: Pt[], sameAngle: number): Pt[] {
+  const result: Pt[] = []
 
-//     return acc
-//   }, [])
-// }
+  let currentVector: Pt | undefined
 
-const areSameDirection = (a: Pt, b: Pt): boolean => {
-  // Check if one of the vectors is a zero vector
-  if ((a[0] === 0 && a[1] === 0) || (b[0] === 0 && b[1] === 0)) {
-    return a[0] === b[0] && a[1] === b[1]
-  }
-  // Check for scalar multiples (ignoring negative zero for simplicity)
-  return (
-    (a[0] === 0 || b[0] === 0 || a[0] / b[0] === b[1] / a[1]) &&
-    (a[1] === 0 || b[1] === 0 || a[1] / b[1] === b[0] / a[0]) &&
-    (a[0] === 0 || b[0] === 0 || Math.sign(a[0]) === Math.sign(b[0])) &&
-    (a[1] === 0 || b[1] === 0 || Math.sign(a[1]) === Math.sign(b[1]))
-  )
-}
-
-// Function to reduce similar vectors by adding them together
-export function reduceSimilarVectors(vectors: Pt[]): Pt[] {
-  return vectors.reduce((acc: Pt[], current: Pt) => {
-    // If there are no vectors in the accumulator, add the current one
-    if (acc.length === 0) {
-      return [current]
-    }
-    const last = acc[acc.length - 1]
-    // Check if current and last vector are in the same direction
-    if (areSameDirection(last, current)) {
-      // If so, add the current vector to the last vector in the accumulator
-      acc[acc.length - 1] = [last[0] + current[0], last[1] + current[1]]
+  for (const vector of vectors) {
+    if (vector[0] === 0 && vector[1] === 0) continue
+    if (currentVector === undefined) {
+      currentVector = vector
     } else {
-      // Otherwise, push the current vector to the accumulator
-      acc.push(current)
+      const currentAngle = Math.atan2(currentVector[1], currentVector[0])
+      const angle = Math.atan2(vector[1], vector[0])
+      const diff = Math.abs(angle - currentAngle) * k
+      if (diff < sameAngle) {
+        currentVector = [currentVector[0] + vector[0], currentVector[1] + vector[1]]
+      } else {
+        result.push(currentVector)
+        currentVector = vector
+      }
     }
-    return acc
-  }, [])
+  }
+
+  if (currentVector !== undefined) result.push(currentVector)
+
+  return result
 }

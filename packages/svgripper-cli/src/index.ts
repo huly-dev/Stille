@@ -18,13 +18,8 @@ program
   .option('-b, --binary', 'output in binary format')
   .option('-w, --width <width>', 'preseve quailty for this width')
   .option('-h, --height <height>', 'preseve quailty for this width')
+  .option('-d, --degree <quality>', 'consider vectors haing  `degree` differnce in degrees as same direction', '10')
   .action((file, options) => {
-    // const options = {
-    //   output: program.getOptionValue('output'),
-    //   binary: program.getOptionValue('binary'),
-    //   width: program.getOptionValue('width'),
-    //   height: program.getOptionValue('height'),
-    // }
     convert(file, createLog(program.getOptionValue('verbose')), options).catch((error) => {
       if (error instanceof Error) console.error('Error:', error.message)
       else console.error('Error:', error)

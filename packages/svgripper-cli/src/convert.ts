@@ -1,11 +1,12 @@
 import { getPathsSVG, mapSVG, mul, parseSVG, round, type Pt } from 'svgripper'
-import { reduceSimilarVectors, sum } from 'svgripper/src/math'
+import { reduceVectors, sum } from 'svgripper/src/math'
 
 type Options = {
   output?: string
   binary?: boolean
   width?: number
   height?: number
+  degree: number
 }
 
 function getRatio(viewBox: Pt, options: Options): Pt {
@@ -68,17 +69,14 @@ export async function convert(file: string, log: (message: string) => void, opti
   const finalScaled = sum(pathScaled)
   log(`verifying final points... original: ${finalOrignal}, rendered: ${finalScaled}`)
 
-  const withoutNoops = pathScaled.filter((pt) => pt[0] !== 0 || pt[1] !== 0)
-  log(`removed ${pathScaled.length - withoutNoops.length} noops, ${withoutNoops.length} points remaining`)
+  // const withoutNoops = pathScaled.filter((pt) => pt[0] !== 0 || pt[1] !== 0)
+  // log(`removed ${pathScaled.length - withoutNoops.length} noops, ${withoutNoops.length} points remaining`)
 
   // withoutNoops.forEach((pt) => console.log(`[${pt[0]}, ${pt[1]}],`))
 
-  let reduced = reduceSimilarVectors(withoutNoops)
-  log(`reduced to ${reduced.length} points`)
-  reduced = reduceSimilarVectors(withoutNoops)
-  log(`reduced to ${reduced.length} points`)
-  reduced = reduceSimilarVectors(withoutNoops)
-  log(`reduced to ${reduced.length} points`)
+  const degree = options.degree
+  let reduced = reduceVectors(pathScaled, degree)
+  log(`reduced to ${reduced.length} points us, using +/-${degree} degree similarity`)
 
-  reduced.forEach((pt) => console.log(`[${pt[0]}, ${pt[1]}]`))
+  // reduced.forEach((pt) => console.log(`[${pt[0]}, ${pt[1]}]`))
 }
