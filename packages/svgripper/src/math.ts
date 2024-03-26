@@ -7,7 +7,10 @@ export const mul =
   (x: Pt) =>
   (y: Pt): Pt => [x[0] * y[0], x[1] * y[1]]
 
-export const $ = (...funcs: F[]) => funcs.reduce((acc, f) => (pt) => f(acc(pt)))
+export const $ =
+  (...funcs: F[]): F =>
+  (x: Pt): Pt =>
+    funcs.reduceRight((acc: Pt, fn: F) => fn(acc), x)
 
 export const mapSVG = (svg: SVG, f: F): SVG => ({
   viewBox: {

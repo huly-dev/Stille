@@ -1,4 +1,4 @@
-import { parseSVG, round, type Pt } from 'svgripper'
+import { $, mapSVG, mul, parseSVG, round, type Pt } from 'svgripper'
 
 type Options = {
   output?: string
@@ -7,12 +7,11 @@ type Options = {
   height?: number
 }
 
-function getRenderBox(viewBox: Pt, options: Options): Pt {
+function getRatio(viewBox: Pt, options: Options): Pt {
   const { width, height } = options
-  if (width && height) return [width, height]
-  if (width) return [width, (viewBox[1] * width) / viewBox[0]]
-  if (height) return [(viewBox[0] * height) / viewBox[1], height]
-  return viewBox
+  if (width && height) return [width / viewBox[0], height / viewBox[1]]
+  const ratio = width ? width / viewBox[0] : height ? height / viewBox[1] : 1
+  return [ratio, ratio]
 }
 
 export async function convert(file: string, log: (message: string) => void, options: Options) {
@@ -27,8 +26,9 @@ export async function convert(file: string, log: (message: string) => void, opti
   if (!viewBox) throw new Error('SVG file must have viewBox')
   if (viewBox.xy[0] !== 0 || viewBox.xy[1] !== 0) throw new Error('SVG file must have viewBox starting at 0,0')
 
-  const renderBox = round(getRenderBox(viewBox.wh, options))
+  const scale = getRatio(viewBox.wh, options)
+  const renderBox = round(mul(viewBox.wh)(scale))
   log(`rendering to ${renderBox[0]}x${renderBox[1]} box...`)
 
-  const scaled = mapSVG(svg)((pt) => round(mul(renderBox[0] / viewBox.wh[0])(pt)))
+  const scaled = mapSVG(svg, $(round, mul(scale)))
 }
