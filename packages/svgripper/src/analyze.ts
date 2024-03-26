@@ -6,17 +6,34 @@
 //
 
 import { numberOfBits } from '@huly/bits'
+import { mul, round } from './math'
 import type { Element, PathSegment, Pt, SVG } from './svg'
 
-// const min = (points: Pt[]) =>
-//   points.reduce(
-//     (acc, point) => {
-//       if (point[0] < acc.minX) acc.minX = point[0]
-//       if (point[1] < acc.minY) acc.minY = point[1]
-//       return acc
-//     },
-//     { minX: Infinity, minY: Infinity },
-//   )
+////
+
+export const mapSVG = (svg: SVG) => (f: (pt: Pt) => Pt) => ({
+  viewBox: {
+    xy: f(svg.viewBox.xy), // only 0 allowed for now
+    wh: f(svg.viewBox.wh),
+  },
+  elements: svg.elements.map(
+    (element): Element => ({
+      name: element.name,
+      segments: element.segments.map(
+        (segment: PathSegment): PathSegment => ({
+          initial: f(segment.initial),
+          lineTo: segment.lineTo.map(f),
+          closed: segment.closed,
+        }),
+      ),
+    }),
+  ),
+})
+
+export const scaleSVG = (svg: SVG, factor: number): SVG => mapSVG(svg, mul(factor))
+export const roundSVG = (svg: SVG): SVG => mapSVG(svg, round)
+
+////
 
 const abs = (points: Pt[]) => points.map((point): Pt => [Math.abs(point[0]), Math.abs(point[1])])
 
@@ -89,28 +106,6 @@ export const analyzeSVG = (svg: SVG) => {
 //     lineTo: segment.lineTo.map((point) => [point[0] * factor, point[1] * factor]),
 //     closed: segment.closed,
 //   })
-
-export const mapSVG = (svg: SVG, f: (pt: Pt) => Pt): SVG => ({
-  viewBox: {
-    xy: f(svg.viewBox.xy), // only 0 allowed for now
-    wh: f(svg.viewBox.wh),
-  },
-  elements: svg.elements.map(
-    (element): Element => ({
-      name: element.name,
-      segments: element.segments.map(
-        (segment: PathSegment): PathSegment => ({
-          initial: f(segment.initial),
-          lineTo: segment.lineTo.map(f),
-          closed: segment.closed,
-        }),
-      ),
-    }),
-  ),
-})
-
-export const scaleSVG = (svg: SVG, factor: number): SVG => mapSVG(svg, (pt) => [pt[0] * factor, pt[1] * factor])
-export const roundSVG = (svg: SVG): SVG => mapSVG(svg, (pt) => [Math.round(pt[0]), Math.round(pt[1])])
 
 const splitPoint = (point: Pt): [left: Pt, right: Pt] => {
   const halfX = Math.round(point[0] / 2)

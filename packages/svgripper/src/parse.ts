@@ -183,7 +183,6 @@ export function parseSVG(svg: string): SVG {
   parser.onopentag = (node) => {
     switch (node.name) {
       case 'svg':
-        console.log('svg', node)
         const vb = node.attributes['viewbox'] as string
         viewBox = vb.split(' ').map((v) => parseFloat(v))
         break
