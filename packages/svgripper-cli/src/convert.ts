@@ -101,7 +101,7 @@ export async function convert(file: string, log: (message: string) => void, opti
     const huffmanTree = buildHuffmanTree(freq)
     const codes = generateHuffmanCodes(huffmanTree)
 
-    console.log('codes.length', codes)
+    console.log('codes.length', codes.length)
 
     let bytesWritten = 0
 
