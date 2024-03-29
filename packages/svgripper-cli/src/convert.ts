@@ -1,3 +1,10 @@
+//
+//   Huly® Platform™ Tools
+//   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
+//
+// © 2024 Hardcore Engineering Inc. All Rights Reserved.
+//
+
 import {
   buildHuffmanTree,
   countFrequencies,
@@ -5,9 +12,7 @@ import {
   createHuffmanEncoder,
   generateHuffmanCodes,
 } from '@huly/bits'
-import { getPathsSVG, mapSVG, mul, parseSVG, round, type Pt } from 'svgripper'
-import { max, min } from 'svgripper/src/analyze'
-import { bounds, reduceVectors, sum } from 'svgripper/src/math'
+import { bounds, getLines, mapSVG, mul, parseSVG, round, sum, type Pt } from 'svgripper'
 
 type Options = {
   output?: string
@@ -32,12 +37,11 @@ export async function convert(file: string, log: (message: string) => void, opti
 
   const svg = parseSVG(svgText)
 
-  const viewBox = svg.viewBox
-  if (!viewBox) throw new Error('SVG file must have viewBox')
-  if (viewBox.xy[0] !== 0 || viewBox.xy[1] !== 0) throw new Error('SVG file must have viewBox starting at 0,0')
+  const { xy, wh } = svg
+  if (xy[0] !== 0 || xy[1] !== 0) throw new Error('SVG file must have viewBox starting at 0,0')
 
-  const scale = getRatio(viewBox.wh, options)
-  const renderBox = round(mul(viewBox.wh, scale))
+  const scale = getRatio(wh, options)
+  const renderBox = round(mul(wh, scale))
   log(`rendering to ${renderBox[0]}x${renderBox[1]} box...`)
 
   let floatX = 0
@@ -69,8 +73,8 @@ export async function convert(file: string, log: (message: string) => void, opti
     return [dx, dy]
   })
 
-  const pathScaled = getPathsSVG(scaled).flat()
-  const pathOrignal = getPathsSVG(svg).flat()
+  const pathOrignal = getLines(svg).flat()
+  const pathScaled = getLines(scaled).flat()
   log(`${pathScaled.length} coordinates in draw commands`)
 
   const finalOrignal = sum(pathOrignal)
