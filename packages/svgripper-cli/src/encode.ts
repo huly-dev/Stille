@@ -29,7 +29,7 @@ function getRatio(viewBox: Pt, options: Options): Pt {
   return [ratio, ratio]
 }
 
-export async function convert(file: string, log: (message: string) => void, options: Options) {
+export async function encode(file: string, log: (message: string) => void, options: Options) {
   log('converting svg file to svgr format...')
 
   const svgText = await Bun.file(file).text()
