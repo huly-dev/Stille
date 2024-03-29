@@ -1,3 +1,10 @@
+//
+//   Huly® Platform™ Tools
+//   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
+//
+// © 2024 Hardcore Engineering Inc. All Rights Reserved.
+//
+
 import { type Element, type PathSegment, type Pt, type SVG } from './svg'
 
 type F = (pt: Pt) => Pt
@@ -8,10 +15,8 @@ export const mul = (x: Pt, y: Pt): Pt => [x[0] * y[0], x[1] * y[1]]
 export const sum = (points: Pt[]): Pt => points.reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]])
 
 export const mapSVG = (svg: SVG, f: F): SVG => ({
-  viewBox: {
-    xy: f(svg.viewBox.xy), // only 0 allowed for now
-    wh: f(svg.viewBox.wh),
-  },
+  xy: f(svg.xy),
+  wh: f(svg.wh),
   elements: svg.elements.map(
     (element): Element => ({
       name: element.name,

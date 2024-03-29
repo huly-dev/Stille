@@ -22,7 +22,7 @@ export type CurveTo = {
 
 export type Extended = CurveTo | Shorthand
 
-type PathSegment = {
+export type PathSegment = {
   initial: Pt // absolute
   lineTo: Pt[] // relative
   extended?: Pt[] // relative

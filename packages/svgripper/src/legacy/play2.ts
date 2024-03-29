@@ -7,7 +7,7 @@ import {
   generateHuffmanCodes,
   numberOfBits,
 } from '@huly/bits'
-import { extendPath, getPathsSVG, max, min, roundSVG, scaleSVG, sum } from './analyze'
+import { extendPath, max, min, roundSVG, scaleSVG, sum } from './analyze'
 import { parseSVG } from './parse'
 import type { Pt } from './svg'
 

@@ -206,7 +206,5 @@ export function parseSVG(svg: string): SVG {
   }
 }
 
-////
-
-// export const getSegmentD = (svg: SVG) =>
-//   svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))
+export const getLines = (svg: SVG) =>
+  svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))
