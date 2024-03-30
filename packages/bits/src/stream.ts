@@ -22,7 +22,7 @@ export function createBitWriteStream(outBits: number, out: (value: number) => vo
 
   return {
     writeBits(value: number, bits: number) {
-      if (value < 0) throw new Error(`encoder: negaive value: ${value}`)
+      if (value < 0) throw new Error(`encoder: negative value: ${value}`)
       if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
 
       while (bits > 0) {

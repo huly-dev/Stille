@@ -11,6 +11,8 @@ type F = (pt: Pt) => Pt
 
 export const round = (point: Pt): Pt => [Math.round(point[0]), Math.round(point[1])]
 export const mul = (x: Pt, y: Pt): Pt => [x[0] * y[0], x[1] * y[1]]
+export const add = (x: Pt, y: Pt): Pt => [x[0] + y[0], x[1] + y[1]]
+export const sub = (x: Pt, y: Pt): Pt => [x[0] - y[0], x[1] - y[1]]
 
 export const sum = (points: Pt[]): Pt => points.reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]])
 

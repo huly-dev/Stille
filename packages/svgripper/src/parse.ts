@@ -7,6 +7,7 @@
 
 import { SAXParser } from 'sax'
 
+import { add, sub } from './math'
 import type { CID, Element, Path, PathSegment, Pt, SVG } from './svg'
 
 export enum TokenType {
@@ -100,26 +101,34 @@ export const parsePath = (d: Token[]): Path => {
     return token.value
   }
 
+  let current: Pt | undefined
+
   while (true) {
     const initial = i.next()
     if (initial === undefined) return result
     if (initial.type !== TokenType.CID) throw new Error('Expected a command')
 
-    let relative = false
+    const value = initial.value
+    if (value !== 'M' && value !== 'm') throw new Error('Expected a move-to command')
 
-    if (initial.value !== 'M') {
-      if (initial.value === 'm') {
-        relative = true
-      } else throw new Error('Expected a move-to command')
+    let relative = value === 'm'
+    const x = toFloat(i.next())
+    const y = toFloat(i.next())
+
+    if (relative) {
+      if (current === undefined) throw new Error('No current point')
+      current = add(current, [x, y])
+    } else current = [x, y]
+
+    if (current[0] < 0 || current[1] < 0) {
+      console.log('Negative', d)
+      throw new Error('Negative')
     }
 
-    const initialX = toFloat(i.next())
-    const initialY = toFloat(i.next())
-
-    let final = [initialX, initialY] // absolute
+    // let final = [initialX, initialY] // absolute
 
     const segment: PathSegment = {
-      initial: [initialX, initialY], // absolute
+      initial: current, // absolute
       lineTo: [], // relative
       closed: false,
     }
@@ -127,10 +136,10 @@ export const parsePath = (d: Token[]): Path => {
     function push(lineTo: Pt, relative: boolean) {
       if (relative) {
         segment.lineTo.push(lineTo)
-        final = [final[0] + lineTo[0], final[1] + lineTo[1]]
+        current = add(current!, lineTo)
       } else {
-        segment.lineTo.push([lineTo[0] - final[0], lineTo[1] - final[1]])
-        final = lineTo
+        segment.lineTo.push(sub(lineTo, current!))
+        current = lineTo
       }
     }
 
@@ -206,5 +215,24 @@ export function parseSVG(svg: string): SVG {
   }
 }
 
-export const getLines = (svg: SVG) =>
-  svg.elements.flatMap((element) => element.segments.map((segment) => segment.lineTo))
+// export const mapSVG = (svg: SVG, f: (pt: Pt) => Pt) => ({
+//   viewBox: {
+//     xy: f(svg.xy), // only 0 allowed for now
+//     wh: f(svg.wh),
+//   },
+//   elements: svg.elements.map(
+//     (element): Element => ({
+//       name: element.name,
+//       segments: element.segments.map(
+//         (segment: PathSegment): PathSegment => ({
+//           initial: f(segment.initial),
+//           lineTo: segment.lineTo.map(f),
+//           closed: segment.closed,
+//         }),
+//       ),
+//     }),
+//   ),
+// })
+
+// export const getSegments = (svg: SVG) =>
+//   svg.elements.map((element) => element.segments.map((segment) => segment.lineTo))

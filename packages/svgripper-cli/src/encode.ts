@@ -5,14 +5,8 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import {
-  buildHuffmanTree,
-  countFrequencies,
-  createBitWriteStream,
-  createHuffmanEncoder,
-  generateHuffmanCodes,
-} from '@huly/bits'
-import { bounds, getLines, mapSVG, mul, parseSVG, round, sum, type Pt } from 'svgripper'
+import { createBitWriteStream } from '@huly/bits'
+import { encodeSVGR, parseSVG, type Pt } from 'svgripper'
 
 type Options = {
   output?: string
@@ -36,91 +30,19 @@ export async function encode(file: string, log: (message: string) => void, optio
   log(`file: ${file}, length: ${svgText.length} bytes`)
 
   const svg = parseSVG(svgText)
+  const scale = getRatio(svg.wh, options)
 
-  const { xy, wh } = svg
-  if (xy[0] !== 0 || xy[1] !== 0) throw new Error('SVG file must have viewBox starting at 0,0')
-
-  const scale = getRatio(wh, options)
-  const renderBox = round(mul(wh, scale))
-  log(`rendering to ${renderBox[0]}x${renderBox[1]} box...`)
-
-  let floatX = 0
-  let floatY = 0
-
-  let intX = 0
-  let intY = 0
-
-  const scaled = mapSVG(svg, (pt: Pt): Pt => {
-    const scaledX = pt[0] * scale[0]
-    const scaledY = pt[1] * scale[1]
-
-    const newX = floatX + scaledX
-    const newY = floatY + scaledY
-
-    const newIntX = Math.round(newX)
-    const newIntY = Math.round(newY)
-
-    const dx = newIntX - intX
-    const dy = newIntY - intY
-
-    // console.log('scaled', scaledX, scaledY, 'd', dx, dy, 'new', newX, newY, 'int', newIntX, newIntY)
-
-    floatX = newX
-    floatY = newY
-    intX = newIntX
-    intY = newIntY
-
-    return [dx, dy]
+  let bytesWritten = 0
+  const result: number[] = []
+  const out = createBitWriteStream(32, (x) => {
+    result.push(x & 0xff)
+    result.push((x >> 8) & 0xff)
+    result.push((x >> 16) & 0xff)
+    result.push((x >> 24) & 0xff)
+    bytesWritten += 4
   })
 
-  const pathOrignal = getLines(svg).flat()
-  const pathScaled = getLines(scaled).flat()
-  log(`${pathScaled.length} coordinates in draw commands`)
+  encodeSVGR(svg, scale, out, log)
 
-  const finalOrignal = sum(pathOrignal)
-  const finalScaled = sum(pathScaled)
-  log(`verifying final points... original: ${finalOrignal}, rendered: ${finalScaled}`)
-
-  const { min, box } = bounds(pathScaled)
-  log(`bounding box: min ${min}, box ${box}]`)
-
-  // const degree = options.degree
-  // const reduced = reduceVectors(pathScaled, degree)
-  // log(`reduced to ${reduced.length} points using ${degree} degree similarity`)
-
-  const reduced = pathScaled.filter((pt) => pt[0] !== 0 || pt[1] !== 0)
-  log(`reduced to ${reduced.length} points`)
-
-  function compress(points: Pt[]) {
-    const { min, box } = bounds(points)
-    log(`reduced bounding box: min ${min}, box ${box}]`)
-    const alphabet = Math.max(box[0], box[1]) + 1
-
-    const normalized = points.flatMap((pt) => [pt[0] - min[0], pt[1] - min[1]])
-    log(`normalized to ${alphabet} symbols in alphabet`)
-
-    const freq = countFrequencies(normalized, alphabet)
-    log(`frequencies: ${freq}`)
-
-    const huffmanTree = buildHuffmanTree(freq)
-    const codes = generateHuffmanCodes(huffmanTree)
-
-    let bytesWritten = 0
-
-    const result: number[] = []
-
-    const bitWriteStream = createBitWriteStream(16, (x) => {
-      result.push(x & 0xff)
-      result.push((x >> 8) & 0xff)
-      bytesWritten++
-    })
-
-    const huffmanEncoder = createHuffmanEncoder(codes, bitWriteStream)
-    normalized.forEach((point) => huffmanEncoder(point))
-    bitWriteStream.flushBits()
-
-    log(`bytesWritten: ${bytesWritten * 2}`)
-  }
-
-  compress(reduced)
+  log(`bytesWritten: ${bytesWritten}`)
 }
