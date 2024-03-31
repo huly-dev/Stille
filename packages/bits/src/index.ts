@@ -5,12 +5,8 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
-export { encodeBaseX, type ByteWriteStream } from './basex'
-export {
-  buildHuffmanTree,
-  countFrequencies,
-  createHuffmanEncoder,
-  generateHuffmanCodes,
-  type HuffmanCodes,
-} from './huffman'
-export { createBitWriteStream, numberOfBits, type BitWriteStream } from './stream'
+export { base91OutputStream, isStringOutputStream, stringOutputStream, type StringOutputStream } from './basex'
+export { bitOutputStream, bitToByteOutputStream, numberOfBits, type BitOutputStream } from './bitstream'
+export { fileOutputStream } from './filestream'
+export { buildHuffmanTree, countFrequencies, generateHuffmanCodes, huffmanEncoder, type HuffmanCodes } from './huffman'
+export type { BinaryOutputStream } from './types'

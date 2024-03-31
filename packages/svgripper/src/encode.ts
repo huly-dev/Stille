@@ -8,11 +8,10 @@
 import {
   buildHuffmanTree,
   countFrequencies,
-  createBitWriteStream,
-  createHuffmanEncoder,
   generateHuffmanCodes,
+  huffmanEncoder,
   numberOfBits,
-  type BitWriteStream,
+  type BitOutputStream,
 } from '@huly/bits'
 import { add, bounds, mul, round, sub } from './math'
 import type { Element, Pt, SVG } from './svg'
@@ -44,7 +43,7 @@ const scaleElement = (element: Element, scale: Pt): Element => ({
 const MAX_ABSOLUTE_BITS = 13
 const FREQUENCY_BITS = 5
 
-export const encodeSVGR = (svg: SVG, scale: Pt, out: BitWriteStream, log: (message: string) => void) => {
+export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutputStream, log: (message: string) => void) => {
   // const huffman = createHuffmanEncoder(codes, out)
 
   const { xy, wh } = svg
@@ -89,12 +88,12 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitWriteStream, log: (messa
   const codes = generateHuffmanCodes(huffmanTree)
   // console.log(codes)
 
-  const huffmanEncoder = createHuffmanEncoder(codes, out)
+  const huffman = huffmanEncoder(codes, out)
 
   let segments = 0
   let current: Pt = [0, 0]
 
-  const writeSign = (value: number, out: BitWriteStream) => out.writeBits(value < 0 ? 1 : 0, 1)
+  const writeSign = (value: number, out: BitOutputStream) => out.writeBits(value < 0 ? 1 : 0, 1)
 
   scaledElements.forEach((element) => {
     switch (element.name) {
@@ -108,9 +107,9 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitWriteStream, log: (messa
             // if (false) {
             // console.log(`relative`)
             out.writeBits(0, 1)
-            huffmanEncoder(Math.abs(d[0]))
+            huffman(Math.abs(d[0]))
             writeSign(d[0], out)
-            huffmanEncoder(Math.abs(d[1]))
+            huffman(Math.abs(d[1]))
             writeSign(d[1], out)
           } else {
             // console.log(`absolute`)
@@ -121,10 +120,10 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitWriteStream, log: (messa
             writeSign(initial[1], out)
           }
           current = initial
-          segment.lineTo.flatMap((pt) => sub(pt, min)).forEach((x) => huffmanEncoder(x))
+          segment.lineTo.flatMap((pt) => sub(pt, min)).forEach((x) => huffman(x))
           if (!segment.closed) throw new Error('support unclosed path segments')
-          huffmanEncoder(0)
-          huffmanEncoder(0)
+          huffman(0)
+          huffman(0)
         })
         break
       default:
@@ -132,6 +131,6 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitWriteStream, log: (messa
     }
   })
 
-  out.flushBits()
+  out.close()
   log(`encoded ${segments} segments`)
 }

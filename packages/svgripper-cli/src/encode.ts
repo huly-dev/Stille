@@ -5,7 +5,14 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { createBitWriteStream, encodeBaseX } from '@huly/bits'
+import {
+  base91OutputStream,
+  bitToByteOutputStream,
+  fileOutputStream,
+  isStringOutputStream,
+  stringOutputStream,
+  type BinaryOutputStream,
+} from '@huly/bits'
 import { encodeSVGR, parseSVG, type Pt } from 'svgripper'
 
 type Options = {
@@ -23,6 +30,15 @@ function getRatio(viewBox: Pt, options: Options): Pt {
   return [ratio, ratio]
 }
 
+const createOutputStream = (options: Options): BinaryOutputStream => {
+  if (options.binary) {
+    if (!options.output) throw new Error('output file is required for binary output')
+    return fileOutputStream(options.output)
+  }
+  const stringOS = stringOutputStream()
+  return base91OutputStream(stringOS)
+}
+
 export async function encode(file: string, log: (message: string) => void, options: Options) {
   log('converting svg file to svgr format...')
 
@@ -32,35 +48,11 @@ export async function encode(file: string, log: (message: string) => void, optio
   const svg = parseSVG(svgText)
   const scale = getRatio(svg.wh, options)
 
-  // const result: number[] = []
-  let result = ''
-  let bytesWritten = 0
+  const out = createOutputStream(options)
+  const bitStream = bitToByteOutputStream(out)
 
-  const avoid = '\'"`'
-  const firstChar = 0x21
-  const lastChar = 0x7e
-  const base = lastChar - firstChar + 1 - avoid.length
+  encodeSVGR(svg, scale, bitStream, log)
+  bitStream.close()
 
-  console.log('chars', String.fromCharCode(firstChar), String.fromCharCode(lastChar))
-
-  const baseEncoder = encodeBaseX(base, 13, 16, (x) => {
-    const char = x + firstChar
-    const i = avoid.indexOf(String.fromCharCode(char))
-    result += String.fromCharCode(i >= 0 ? lastChar - i : char)
-    bytesWritten++
-  })
-
-  const out = createBitWriteStream(32, (x) => {
-    baseEncoder.writeByte(x & 0xff)
-    baseEncoder.writeByte((x >> 8) & 0xff)
-    baseEncoder.writeByte((x >> 16) & 0xff)
-    baseEncoder.writeByte((x >> 24) & 0xff)
-  })
-
-  encodeSVGR(svg, scale, out, log)
-  baseEncoder.flush()
-
-  log(`bytesWritten: ${bytesWritten}`)
-
-  console.log(result)
+  if (isStringOutputStream(out)) console.log(out.result())
 }
