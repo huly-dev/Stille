@@ -6,12 +6,15 @@
 //
 
 import { expect, test } from 'bun:test'
-import { encoder, numberOfBits } from '../src/stream'
+import { bitOutputStream, numberOfBits } from '../src/bitstream'
 
 test('encoder', () => {
   const output: number[] = []
-  const collector = (value: number) => output.push(value)
-  const e = encoder(8, collector)
+  const e = bitOutputStream(8, {
+    writeBits: (value: number) => output.push(value),
+    write: () => expect(false).toBe(true),
+    close: () => {},
+  })
 
   e.writeBits(0b1, 1)
   e.writeBits(0b10, 2)
@@ -24,15 +27,10 @@ test('encoder', () => {
   expect(output.length).toBe(1)
   expect(output[0]).toBe(0b11010101)
 
-  e.flushBits()
+  e.close()
 
   expect(output.length).toBe(2)
   expect(output[1]).toBe(0b00000001)
-})
-
-test('encoder overflow', () => {
-  const collector = () => {}
-  const e = encoder(8, collector)
 
   expect(() => e.writeBits(0b1, 9)).toThrow()
   expect(() => e.writeBits(0b1, -1)).toThrow()

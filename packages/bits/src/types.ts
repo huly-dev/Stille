@@ -9,3 +9,9 @@ export interface BinaryOutputStream {
   write(value: number): void
   close(): void
 }
+
+export interface BinaryInputStream {
+  read(): number
+  available(): boolean
+  close(): void
+}

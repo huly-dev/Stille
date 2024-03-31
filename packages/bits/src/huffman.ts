@@ -6,6 +6,7 @@
 //
 
 import type { BitOutputStream } from './bitstream'
+import type { BinaryInputStream, BinaryOutputStream } from './types'
 
 type HuffmanNode = {
   frequency: number
@@ -23,7 +24,11 @@ export type HuffmanTree = HuffmanNode
 export type HuffmanCodes = HuffmanCode[]
 type FrequencyTable = number[]
 
-const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequency, symbol) => ({ symbol, frequency }))
+const constructNodes = (frequencies: FrequencyTable) => {
+  const result = frequencies.map((frequency, symbol) => ({ symbol, frequency }))
+  result.push({ frequency: 1, symbol: -1 }) // EOF symbol
+  return result
+}
 
 export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
@@ -62,12 +67,12 @@ export const huffmanEncoder =
     out.writeBits(code.value, code.length)
   }
 
-const huffmanDecoder = (encodedData: string, codes: HuffmanCodes): number[] => {
-  const invertedCodes: Record<string, number> = {}
-  Object.entries(codes).forEach(([symbol, code]) => {
-    const bitString = code.value.toString(2).padStart(code.length, '0')
-    invertedCodes[bitString] = parseInt(symbol)
-  })
+const huffmanDecoder = (codes: HuffmanCodes, input: BinaryInputStream, out: BinaryOutputStream) => {
+  // const invertedCodes: Map<number, number> = new Map()
+  const invert = codes.map(({ value }, i) => [value, i] as [number, number])
+  const invertedCodes = new Map(invert)
+
+  while (input.available()) {}
 
   let output: number[] = []
   let buffer: string[] = []

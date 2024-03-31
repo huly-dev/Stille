@@ -5,10 +5,15 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BinaryOutputStream } from './types'
+import type { BinaryInputStream, BinaryOutputStream } from './types'
 
 export interface BitOutputStream extends BinaryOutputStream {
   writeBits(value: number, bits: number): void
+}
+
+export interface BitInputStream extends BinaryInputStream {
+  readBit(): 0 | 1
+  readBits(bits: number): number
 }
 
 /**
@@ -65,6 +70,29 @@ export const bitToByteOutputStream = (out: BinaryOutputStream): BitOutputStream 
     },
     close: out.close,
   })
+
+export const bitInputStream = (input: BinaryInputStream): BitInputStream => {
+  let buffer = 0
+  let bits = 0
+
+  return {
+    readBit() {
+      if (bits === 0) {
+        buffer = input.read()
+        bits = 8
+      }
+      return ((buffer >>> --bits) & 1) as 0 | 1
+    },
+    readBits(_: number) {
+      throw new Error(`bitInputStream: not implemented`)
+    },
+    read() {
+      throw new Error(`bitInputStream: not implemented`)
+    },
+    available: () => bits > 0 || input.available(),
+    close: input.close,
+  }
+}
 
 const MAX_UINT32 = 0xffffffff
 
