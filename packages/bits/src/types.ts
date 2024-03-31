@@ -5,13 +5,11 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-export interface BinaryOutputStream {
-  write(value: number): void
+export interface Stream {
+  open(bits: number): void // this is optional call to verify if stream accepts values of given lengths in bits. Zero foe variable bit-length
   close(): void
 }
 
-export interface BinaryInputStream {
-  read(): number
-  available(): boolean
-  close(): void
+export interface ByteStream extends Stream {
+  byte(value: number): void
 }

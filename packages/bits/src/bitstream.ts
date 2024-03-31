@@ -5,15 +5,10 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BinaryInputStream, BinaryOutputStream } from './types'
+import type { ByteStream, Stream } from './types'
 
-export interface BitOutputStream extends BinaryOutputStream {
-  writeBits(value: number, bits: number): void
-}
-
-export interface BitInputStream extends BinaryInputStream {
-  readBit(): 0 | 1
-  readBits(bits: number): number
+export interface BitStream extends Stream {
+  bits(value: number, bits: number): void
 }
 
 /**
@@ -22,77 +17,64 @@ export interface BitInputStream extends BinaryInputStream {
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function bitOutputStream(outBits: number, out: BitOutputStream): BitOutputStream {
+export function bitOutputStream(outBits: number, out: BitStream): BitStream {
   let word = 0
   let bit = 0
 
-  const writeBits = (value: number, bits: number) => {
-    if (value < 0) throw new Error(`encoder: negative value: ${value}`)
-    if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
-
-    while (bits > 0) {
-      const fit = outBits - bit
-      const toFit = value & ((1 << fit) - 1)
-      word |= toFit << bit
-      if (bits > fit) {
-        out.writeBits(word, outBits)
-        bit = word = 0
-        value >>>= fit
-        bits -= fit
-      } else {
-        bit += bits
-        break
-      }
-    }
-  }
-
   return {
-    writeBits,
-    write: (value: number) => writeBits(value, 8),
-    close() {
-      if (bit) out.writeBits(word, outBits)
+    open: () => {
+      out.open(outBits)
+    },
+    bits: (value: number, bits: number) => {
+      if (value < 0) throw new Error(`encoder: negative value: ${value}`)
+      if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
+
+      while (bits > 0) {
+        const fit = outBits - bit
+        const toFit = value & ((1 << fit) - 1)
+        word |= toFit << bit
+        if (bits > fit) {
+          out.bits(word, outBits)
+          bit = word = 0
+          value >>>= fit
+          bits -= fit
+        } else {
+          bit += bits
+          break
+        }
+      }
+    },
+    close: () => {
+      if (bit) out.bits(word, outBits)
       out.close()
     },
   }
 }
 
-export const bitToByteOutputStream = (out: BinaryOutputStream): BitOutputStream =>
-  bitOutputStream(32, {
-    writeBits(x: number, bits: number) {
-      if (bits !== 32) throw new Error(`bitToByteOutputStream: expecting 32 bit input`)
-      out.write(x & 0xff)
-      out.write((x >> 8) & 0xff)
-      out.write((x >> 16) & 0xff)
-      out.write((x >> 24) & 0xff)
-    },
-    write: () => {
-      throw new Error(`bitToByteOutputStream: expecting 32 bit input`)
-    },
-    close: out.close,
-  })
+export const bitToByteOutputStream = (out: ByteStream): BitStream => ({
+  open(bits) {
+    if (bits !== 32) throw new Error(`bitToByteOutputStream: expecting 32 bit input`)
+    out.open(8)
+  },
+  bits(x: number) {
+    out.byte(x & 0xff)
+    out.byte((x >>> 8) & 0xff)
+    out.byte((x >>> 16) & 0xff)
+    out.byte((x >>> 24) & 0xff)
+  },
+  close: out.close,
+})
 
-export const bitInputStream = (input: BinaryInputStream): BitInputStream => {
-  let buffer = 0
-  let bits = 0
-
-  return {
-    readBit() {
-      if (bits === 0) {
-        buffer = input.read()
-        bits = 8
-      }
-      return ((buffer >>> --bits) & 1) as 0 | 1
-    },
-    readBits(_: number) {
-      throw new Error(`bitInputStream: not implemented`)
-    },
-    read() {
-      throw new Error(`bitInputStream: not implemented`)
-    },
-    available: () => bits > 0 || input.available(),
-    close: input.close,
-  }
-}
+export const singleBitStream = (out: BitStream): BitStream => ({
+  open(bits: number) {
+    if (bits !== 0) throw new Error(`singleBitStream: expecting variable bit-length input`)
+    out.open(1)
+  },
+  bits: (value: number, bits: number) => {
+    for (; bits-- > 0; value >>>= 1) out.bits(value & 1, 1)
+  },
+  close: out.close,
+})
 
 const MAX_UINT32 = 0xffffffff
 
