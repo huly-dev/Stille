@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { createBitWriteStream } from '@huly/bits'
+import { createBitWriteStream, encodeBaseX } from '@huly/bits'
 import { encodeSVGR, parseSVG, type Pt } from 'svgripper'
 
 type Options = {
@@ -32,17 +32,28 @@ export async function encode(file: string, log: (message: string) => void, optio
   const svg = parseSVG(svgText)
   const scale = getRatio(svg.wh, options)
 
+  // const result: number[] = []
+  let result = ''
   let bytesWritten = 0
-  const result: number[] = []
+  const quote = "'".charCodeAt(0)
+
+  const baseEncoder = encodeBaseX(93, 13, 16, (x) => {
+    const char = x + 33
+    result += String.fromCharCode(char === quote ? 126 : char)
+    bytesWritten++
+  })
+
   const out = createBitWriteStream(32, (x) => {
-    result.push(x & 0xff)
-    result.push((x >> 8) & 0xff)
-    result.push((x >> 16) & 0xff)
-    result.push((x >> 24) & 0xff)
-    bytesWritten += 4
+    baseEncoder.writeByte(x & 0xff)
+    baseEncoder.writeByte((x >> 8) & 0xff)
+    baseEncoder.writeByte((x >> 16) & 0xff)
+    baseEncoder.writeByte((x >> 24) & 0xff)
   })
 
   encodeSVGR(svg, scale, out, log)
+  baseEncoder.flush()
 
   log(`bytesWritten: ${bytesWritten}`)
+
+  console.log(result)
 }

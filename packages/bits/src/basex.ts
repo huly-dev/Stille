@@ -5,11 +5,21 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-export function encodeBaseX(base: number, bytesBuffer: number, baseBuffer: number, out: (base: number) => void) {
+export type ByteWriteStream = {
+  writeByte(value: number): void
+  flush(): void
+}
+
+export function encodeBaseX(
+  base: number,
+  bytesBuffer: number,
+  baseBuffer: number,
+  out: (base: number) => void,
+): ByteWriteStream {
   const Base = BigInt(base)
   const Byte = BigInt(256)
 
-  if (2n ** BigInt(bytesBuffer) > 2n ** BigInt(baseBuffer))
+  if (Byte ** BigInt(bytesBuffer) > Base ** BigInt(baseBuffer))
     throw new Error('encodeBaseX: `baseBuffer` too small for `bytesBuffer`')
 
   const send = (char: BigInt) => out(Number(char))

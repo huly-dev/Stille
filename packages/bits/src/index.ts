@@ -5,7 +5,7 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
-export { encodeBaseX } from './basex'
+export { encodeBaseX, type ByteWriteStream } from './basex'
 export {
   buildHuffmanTree,
   countFrequencies,
