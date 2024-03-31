@@ -35,11 +35,18 @@ export async function encode(file: string, log: (message: string) => void, optio
   // const result: number[] = []
   let result = ''
   let bytesWritten = 0
-  const quote = "'".charCodeAt(0)
 
-  const baseEncoder = encodeBaseX(93, 13, 16, (x) => {
-    const char = x + 33
-    result += String.fromCharCode(char === quote ? 126 : char)
+  const avoid = '\'"`'
+  const firstChar = 0x21
+  const lastChar = 0x7e
+  const base = lastChar - firstChar + 1 - avoid.length
+
+  console.log('chars', String.fromCharCode(firstChar), String.fromCharCode(lastChar))
+
+  const baseEncoder = encodeBaseX(base, 13, 16, (x) => {
+    const char = x + firstChar
+    const i = avoid.indexOf(String.fromCharCode(char))
+    result += String.fromCharCode(i >= 0 ? lastChar - i : char)
     bytesWritten++
   })
 
