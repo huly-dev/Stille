@@ -5,8 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BitOutputStream } from './bitstream'
-import type { BinaryInputStream, BinaryOutputStream } from './types'
+import type { BitOutStream, InStream, OutStream } from './types'
 
 type HuffmanNode = {
   frequency: number
@@ -61,13 +60,13 @@ export const generateHuffmanCodes = (huffmanTree: HuffmanTree): HuffmanCodes => 
 }
 
 export const huffmanEncoder =
-  (codes: HuffmanCodes, out: BitOutputStream) =>
+  (codes: HuffmanCodes, out: BitOutStream) =>
   (symbol: number): void => {
     const code = codes[symbol]
     out.writeBits(code.value, code.length)
   }
 
-const huffmanDecoder = (codes: HuffmanCodes, input: BinaryInputStream, out: BinaryOutputStream) => {
+const huffmanDecoder = (codes: HuffmanCodes, input: InStream, out: OutStream) => {
   // const invertedCodes: Map<number, number> = new Map()
   const invert = codes.map(({ value }, i) => [value, i] as [number, number])
   const invertedCodes = new Map(invert)

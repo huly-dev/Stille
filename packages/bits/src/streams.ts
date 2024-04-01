@@ -5,26 +5,35 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-export function stringCollector() {
+import type { InStream, OutStream } from './types'
+
+interface Collector<T> extends OutStream {
+  result(): T
+}
+
+export function stringCollector(): Collector<string> {
   let buffer = ''
   return {
-    open(bits: number) {
-      if (bits !== 8) throw new Error('stringCollector: expecting 8 bits input')
-    },
-    byte: (value: number) => (buffer += String.fromCharCode(value)),
-    close() {},
+    write: (value: number) => (buffer += String.fromCharCode(value)),
+    close: () => {},
     result: () => buffer,
   }
 }
 
-export function bytesCollector() {
+export function bytesCollector(): Collector<number[]> {
   const buffer: number[] = []
   return {
-    open(bits: number) {
-      if (bits !== 8) throw new Error('stringCollector: expecting 8 bits input')
-    },
-    byte: (value: number) => buffer.push(value),
-    close() {},
+    write: (value: number) => buffer.push(value),
+    close: () => {},
     result: () => buffer,
+  }
+}
+
+export function byteArrayInStream(array: number[]): InStream {
+  let index = 0
+  return {
+    available: () => index < array.length,
+    read: () => array[index++],
+    close: () => {},
   }
 }

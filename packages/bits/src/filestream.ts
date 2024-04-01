@@ -5,11 +5,11 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { ByteStream } from './types'
+import type { OutStream } from './types'
 
 const BufferSize = 0x1000
 
-export function fileOutputStream(path: string): ByteStream {
+export function fileOutputStream(path: string): OutStream {
   const buffer = new ArrayBuffer(BufferSize)
   const byteArray = new Uint8Array(buffer)
   let pos = 0
@@ -18,7 +18,7 @@ export function fileOutputStream(path: string): ByteStream {
   const writer = file.writer()
 
   return {
-    byte: (value: number) => {
+    write: (value: number) => {
       byteArray[pos++] = value
       if (pos === BufferSize) {
         writer.write(byteArray)

@@ -5,11 +5,21 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-export interface Stream {
-  open(bits: number): void // this is optional call to verify if stream accepts values of given lengths in bits. Zero foe variable bit-length
+export interface OutStream {
+  write(value: number): void
   close(): void
 }
 
-export interface ByteStream extends Stream {
-  byte(value: number): void
+export interface BitOutStream extends OutStream {
+  writeBits(value: number, length: number): void
+}
+
+export interface InStream {
+  available(): boolean
+  read(): number
+  close(): void
+}
+
+export interface BitInStream extends InStream {
+  readBits(length: number): number
 }

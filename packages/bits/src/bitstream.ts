@@ -5,11 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { ByteStream, Stream } from './types'
-
-export interface BitStream extends Stream {
-  bits(value: number, bits: number): void
-}
+import type { BitInStream, BitOutStream, InStream, OutStream } from './types'
 
 /**
  * Creates an encoder that manages a stream of bits and outputs them in chunks.
@@ -17,64 +13,82 @@ export interface BitStream extends Stream {
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function bitOutputStream(outBits: number, out: BitStream): BitStream {
+export function bitOutputStream(outBits: number, out: BitOutStream): BitOutStream {
   let word = 0
   let bit = 0
 
-  return {
-    open: () => {
-      out.open(outBits)
-    },
-    bits: (value: number, bits: number) => {
-      if (value < 0) throw new Error(`encoder: negative value: ${value}`)
-      if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
+  const writeBits = (value: number, bits: number) => {
+    if (value < 0) throw new Error(`encoder: negative value: ${value}`)
+    if (bits < 0 || bits > outBits) throw new Error(`encoder: invalid number of bits (${bits})`)
 
-      while (bits > 0) {
-        const fit = outBits - bit
-        const toFit = value & ((1 << fit) - 1)
-        word |= toFit << bit
-        if (bits > fit) {
-          out.bits(word, outBits)
-          bit = word = 0
-          value >>>= fit
-          bits -= fit
-        } else {
-          bit += bits
-          break
-        }
+    while (bits > 0) {
+      const fit = outBits - bit
+      const toFit = value & ((1 << fit) - 1)
+      word |= toFit << bit
+      if (bits > fit) {
+        out.writeBits(word, outBits)
+        bit = word = 0
+        value >>>= fit
+        bits -= fit
+      } else {
+        bit += bits
+        break
       }
-    },
+    }
+  }
+
+  return {
+    writeBits,
+    write: (value: number) => writeBits(value, 8),
     close: () => {
-      if (bit) out.bits(word, outBits)
+      if (bit) out.writeBits(word, outBits)
       out.close()
     },
   }
 }
 
-export const bitToByteOutputStream = (out: ByteStream): BitStream => ({
-  open(bits) {
-    if (bits !== 32) throw new Error(`bitToByteOutputStream: expecting 32 bit input`)
-    out.open(8)
-  },
-  bits(x: number) {
-    out.byte(x & 0xff)
-    out.byte((x >>> 8) & 0xff)
-    out.byte((x >>> 16) & 0xff)
-    out.byte((x >>> 24) & 0xff)
-  },
-  close: out.close,
-})
+export const bitToOutStream = (out: OutStream): BitOutStream => {
+  let value = 0
+  let bits = 0
 
-export const singleBitStream = (out: BitStream): BitStream => ({
-  open(bits: number) {
-    if (bits !== 0) throw new Error(`singleBitStream: expecting variable bit-length input`)
-    out.open(1)
-  },
-  bits: (value: number, bits: number) => {
-    for (; bits-- > 0; value >>>= 1) out.bits(value & 1, 1)
-  },
-  close: out.close,
-})
+  return {
+    writeBits(x: number, n: number) {
+      value = (value << n) | (x & ((1 << n) - 1))
+      bits += n
+      while (bits >= 8) {
+        out.write(value & 0xff)
+        value >>>= 8
+        bits -= 8
+      }
+    },
+    write: (x: number) => out.write(x),
+    close: () => {
+      if (bits) out.write(value)
+      out.close()
+    },
+  }
+}
+
+export const singleBitInStream = (input: InStream): BitInStream => {
+  let buffer = 0
+  let bits = 0
+
+  return {
+    available: () => bits > 0 || input.available(),
+    readBits: (length: number) => {
+      if (length !== 1) throw new Error(`singleBitInStream: only 1 bit supported: ${length}`)
+      if (bits === 0) {
+        buffer = input.read()
+        bits = 8
+      }
+      return (buffer >>> --bits) & 1
+    },
+    read: () => {
+      throw new Error('singleBitInStream: read not supported, use `readBits` instead')
+    },
+    close: input.close,
+  }
+}
 
 const MAX_UINT32 = 0xffffffff
 
