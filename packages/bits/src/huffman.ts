@@ -19,8 +19,9 @@ export type HuffmanCode = {
   value: number
 }
 
-export type HuffmanTree = HuffmanNode
+type HuffmanTree = HuffmanNode
 export type HuffmanCodes = HuffmanCode[]
+
 type FrequencyTable = number[]
 
 const constructNodes = (frequencies: FrequencyTable) => {
@@ -29,7 +30,7 @@ const constructNodes = (frequencies: FrequencyTable) => {
   return result
 }
 
-export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
+const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
 
   while (queue.length > 1) {
@@ -45,7 +46,9 @@ export const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   return queue[0]
 }
 
-export const generateHuffmanCodes = (huffmanTree: HuffmanTree): HuffmanCodes => {
+export const generateHuffmanCodes = (frequencies: FrequencyTable): HuffmanCodes => {
+  const huffmanTree = buildHuffmanTree(frequencies)
+
   const traverse = (node: HuffmanNode, depth: number, value: number, codes: HuffmanCodes) => {
     if (node.symbol !== undefined) codes[node.symbol] = { length: depth, value: value }
     else {
@@ -68,20 +71,17 @@ export const huffmanEncoder =
   }
 
 export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: OutStream) => {
-  const invert = codes.map(({ value }, i) => [value, i] as [number, number])
+  const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
   const invertedCodes = new Map(invert)
-  let buffer = 0
-  let length = 0
+  let buffer = 1
 
   while (input.available()) {
-    buffer |= input.readBits(1) << length
+    buffer = (buffer << 1) | input.readBits(1)
     const symbol = invertedCodes.get(buffer)
-    if (!symbol) continue
-    console.log('read symbol:', symbol, 'code', buffer)
+    if (symbol === undefined) continue
     if (symbol === -1) break
     out.write(symbol)
-    buffer = 0
-    length = 0
+    buffer = 1
   }
 }
 
