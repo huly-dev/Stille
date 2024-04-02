@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BitOutStream, InStream, OutStream } from './types'
+import type { BitInStream, BitOutStream, OutStream } from './types'
 
 type HuffmanNode = {
   frequency: number
@@ -14,7 +14,7 @@ type HuffmanNode = {
   right?: HuffmanNode
 }
 
-type HuffmanCode = {
+export type HuffmanCode = {
   length: number
   value: number
 }
@@ -64,28 +64,25 @@ export const huffmanEncoder =
   (symbol: number): void => {
     const code = codes[symbol]
     out.writeBits(code.value, code.length)
+    if (symbol === -1) out.close()
   }
 
-const huffmanDecoder = (codes: HuffmanCodes, input: InStream, out: OutStream) => {
-  // const invertedCodes: Map<number, number> = new Map()
+export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: OutStream) => {
   const invert = codes.map(({ value }, i) => [value, i] as [number, number])
   const invertedCodes = new Map(invert)
+  let buffer = 0
+  let length = 0
 
-  while (input.available()) {}
-
-  let output: number[] = []
-  let buffer: string[] = []
-
-  for (let bit of encodedData) {
-    buffer.push(bit)
-    const bitString = buffer.join('')
-    if (invertedCodes[bitString] !== undefined) {
-      output.push(invertedCodes[bitString])
-      buffer = []
-    }
+  while (input.available()) {
+    buffer |= input.readBits(1) << length
+    const symbol = invertedCodes.get(buffer)
+    if (!symbol) continue
+    console.log('read symbol:', symbol, 'code', buffer)
+    if (symbol === -1) break
+    out.write(symbol)
+    buffer = 0
+    length = 0
   }
-
-  return output
 }
 
 export const countFrequencies = (data: number[], symbols: number): number[] =>

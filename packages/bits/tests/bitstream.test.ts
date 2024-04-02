@@ -7,40 +7,28 @@
 
 import { expect, test } from 'bun:test'
 
-import {
-  bitOutputStream,
-  bitToOutStream,
-  byteArrayInStream,
-  bytesCollector,
-  numberOfBits,
-  singleBitInStream,
-} from '../src/'
+import { bitOutputStream, byteArrayInStream, bytesCollector, numberOfBits, singleBitInStream } from '../src/'
 
 test('bitOutputStream', () => {
-  const output: number[] = []
-  const e = bitOutputStream(8, {
-    writeBits: (value: number) => output.push(value),
-    write: (value: number) => output.push(value),
-    close: () => {},
-  })
+  const c = bytesCollector()
+  const e = bitOutputStream(c)
 
   e.writeBits(0b1, 1)
   e.writeBits(0b10, 2)
   e.writeBits(0b1010, 4)
 
-  expect(output.length).toBe(0)
+  expect(c.result().length).toBe(0)
 
   e.writeBits(0b11, 2)
 
-  expect(output.length).toBe(1)
-  expect(output[0]).toBe(0b11010101)
+  expect(c.result().length).toBe(1)
+  expect(c.result()[0]).toBe(0b11010101)
 
   e.close()
 
-  expect(output.length).toBe(2)
-  expect(output[1]).toBe(0b00000001)
+  expect(c.result().length).toBe(2)
+  expect(c.result()[1]).toBe(0b00000001)
 
-  expect(() => e.writeBits(0b1, 9)).toThrow()
   expect(() => e.writeBits(0b1, -1)).toThrow()
   expect(() => e.writeBits(-1, 5)).toThrow()
   expect(() => e.writeBits(0b1, 4)).not.toThrow()
@@ -80,18 +68,4 @@ test('singleBitInStream', () => {
   expect(e.readBits(1)).toBe(0)
 
   expect(e.available()).toBe(false)
-})
-
-test('bitToOutStream', () => {
-  const random = [237, 227, 55, 0, 122, 174, 241, 105, 110, 176]
-  const c = bytesCollector()
-  const e = bitToOutStream(c)
-
-  random.forEach((value) => {
-    e.writeBits(value >>> 4, 4)
-    e.writeBits(value & 0xf, 4)
-  })
-  e.close()
-
-  expect(c.result()).toEqual(random)
 })
