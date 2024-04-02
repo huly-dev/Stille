@@ -31,15 +31,16 @@ test('encode/decode', () => {
   const out = bitOutputStream(collector)
 
   const encoder = huffmanEncoder(codes, out)
-  random.forEach(encoder)
-  encoder(-1)
+  random.forEach(encoder.writeSymbol)
+  encoder.close()
 
-  const result = collector.result()
-  console.log(result)
-
-  const input = singleBitInStream(byteArrayInStream(result))
-  const output = bytesCollector()
+  const input = singleBitInStream(byteArrayInStream(collector.result()))
+  const symbols: number[] = []
+  const output = {
+    writeSymbol: (symbol: number) => symbols.push(symbol),
+    close: () => {},
+  }
 
   huffmanDecode(codes, input, output)
-  expect(output.result()).toEqual(random)
+  expect(symbols).toEqual(random)
 })

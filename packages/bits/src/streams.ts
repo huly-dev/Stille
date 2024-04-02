@@ -5,16 +5,16 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { InStream, OutStream } from './types'
+import type { ByteInStream, ByteOutStream } from './types'
 
-interface Collector<T> extends OutStream {
+interface Collector<T> extends ByteOutStream {
   result(): T
 }
 
 export function stringCollector(): Collector<string> {
   let buffer = ''
   return {
-    write: (value: number) => (buffer += String.fromCharCode(value)),
+    writeByte: (value: number) => (buffer += String.fromCharCode(value)),
     close: () => {},
     result: () => buffer,
   }
@@ -23,17 +23,17 @@ export function stringCollector(): Collector<string> {
 export function bytesCollector(): Collector<number[]> {
   const buffer: number[] = []
   return {
-    write: (value: number) => buffer.push(value),
+    writeByte: (value: number) => buffer.push(value),
     close: () => {},
     result: () => buffer,
   }
 }
 
-export function byteArrayInStream(array: number[]): InStream {
+export function byteArrayInStream(array: number[]): ByteInStream {
   let index = 0
   return {
     available: () => index < array.length,
-    read: () => array[index++],
+    readByte: () => array[index++],
     close: () => {},
   }
 }

@@ -5,35 +5,18 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BitInStream, BitOutStream, InStream, OutStream } from './types'
+import type { ByteInStream, ByteOutStream, InStream, OutStream } from './types'
+
+export interface BitOutStream extends OutStream {
+  writeBits(value: number, length: number): void
+}
+
+export interface BitInStream extends InStream {
+  readBits(length: number): number
+}
 
 const MAX_UINT32 = 0xffffffff
-
 const ones = (pow: number) => (pow === 32 ? MAX_UINT32 : (1 << pow) - 1)
-// const concat = (x: number, y: number, length: number) => (x << length) | (y & ones(length))
-
-// const bitBuffer = (value: number, length: number) => {
-//   if (value < 0) throw new Error(`bitBuffer: negative value: ${value}`)
-
-//   let uint32 = value
-//   let bits = length
-
-//   return {
-//     push: (value: number, length: number) => {
-//       if (bits + length > 32) throw new Error(`bitValue: too many bits (${bits + length})`)
-//       uint32 = concat(uint32, value, length)
-//       bits += length
-//     },
-//     pop: (length: number) => {
-//       if (length > bits) throw new Error(`bitValue: invalid number of bits (${length})`)
-//       const result = uint32 >>> (bits - length)
-//       bits -= length
-//       uint32 &= ones(bits)
-//       return result
-//     },
-//     length: () => bits,
-//   }
-// }
 
 /**
  * Creates an encoder that manages a stream of bits and outputs them in chunks.
@@ -41,56 +24,32 @@ const ones = (pow: number) => (pow === 32 ? MAX_UINT32 : (1 << pow) - 1)
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function bitOutputStream(out: OutStream): BitOutStream {
+export function bitOutputStream(out: ByteOutStream): BitOutStream {
   let buffer = 0
   let bit = 0
 
-  const writeBits = (value: number, length: number) => {
-    if (value < 0 || length < 0) throw new Error(`bitOutputStream: negative argument`)
-    buffer = (buffer << length) | value
-    bit += length
-
-    while (bit >= 8) {
-      out.write((buffer >>> (bit - 8)) & 0xff)
-      bit -= 8
-    }
-
-    buffer = buffer & ones(bit)
-  }
-
   return {
-    writeBits,
-    write: (value: number) => writeBits(value, 8),
+    writeBits: (value: number, length: number) => {
+      if (value < 0 || length < 0) throw new Error(`bitOutputStream: negative argument`)
+
+      buffer = (buffer << length) | value
+      bit += length
+
+      while (bit >= 8) {
+        out.writeByte((buffer >>> (bit - 8)) & 0xff)
+        bit -= 8
+      }
+
+      buffer = buffer & ones(bit)
+    },
     close: () => {
-      if (bit) out.write(buffer & ones(bit))
+      if (bit) out.writeByte(buffer & ones(bit))
       out.close()
     },
   }
 }
 
-// export const bitToOutStream = (out: OutStream): BitOutStream => {
-//   let value = 0
-//   let bits = 0
-
-//   return {
-//     writeBits(x: number, n: number) {
-//       value = concat(value, x, n)
-//       bits += n
-//       while (bits >= 8) {
-//         out.write((value >>> (bits - 8)) & 0xff)
-//         bits -= 8
-//       }
-//       value &= 0xff
-//     },
-//     write: (x: number) => out.write(x),
-//     close: () => {
-//       if (bits) out.write(value)
-//       out.close()
-//     },
-//   }
-// }
-
-export const singleBitInStream = (input: InStream): BitInStream => {
+export const singleBitInStream = (input: ByteInStream): BitInStream => {
   let buffer = 0
   let bits = 0
 
@@ -99,13 +58,10 @@ export const singleBitInStream = (input: InStream): BitInStream => {
     readBits: (length: number) => {
       if (length !== 1) throw new Error(`singleBitInStream: only 1 bit supported: ${length}`)
       if (bits === 0) {
-        buffer = input.read()
+        buffer = input.readByte()
         bits = 8
       }
       return (buffer >>> --bits) & 1
-    },
-    read: () => {
-      throw new Error('singleBitInStream: read not supported, use `readBits` instead')
     },
     close: input.close,
   }
