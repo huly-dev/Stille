@@ -90,10 +90,11 @@ export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: Symb
   while (input.available()) {
     buffer = (buffer << 1) | input.readBits(1)
     const symbol = invertedCodes.get(buffer)
-    if (symbol === undefined) continue
-    if (symbol === -1) break
-    out.writeSymbol(symbol)
-    buffer = 1
+    if (symbol !== undefined) {
+      if (symbol === -1) break
+      out.writeSymbol(symbol)
+      buffer = 1
+    }
   }
 }
 

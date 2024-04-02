@@ -27,7 +27,7 @@ test('bitOutputStream', () => {
   e.close()
 
   expect(c.result().length).toBe(2)
-  expect(c.result()[1]).toBe(0b00000001)
+  expect(c.result()[1]).toBe(0b10000000)
 
   expect(() => e.writeBits(0b1, -1)).toThrow()
   expect(() => e.writeBits(-1, 5)).toThrow()

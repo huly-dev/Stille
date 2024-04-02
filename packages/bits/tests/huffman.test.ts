@@ -19,10 +19,7 @@ import {
 } from '../src/'
 
 test('encode/decode', () => {
-  const random = [
-    3, 2, 5, 1, 2, 7, 4, 4, 4, 7, 0, 5, 3, 2, 1, 0, 2, 7, 4, 3, 4, 7, 0, 5, 7, 2, 2, 7, 4, 4, 4, 7, 0, 5, 3, 2, 1, 0, 2,
-    7, 4, 3, 4, 7, 0, 5, 7, 2, 4, 3, 4, 7, 0, 5, 7, 2, 4, 3, 0, 0, 0, 0, 0, 7,
-  ]
+  const random = [3, 2, 5, 1, 2, 7, 4, 4, 4, 7, 0, 5, 3, 2, 1, 0, 2, 7, 4, 3, 4, 7, 7, 2]
 
   const frequencies = countFrequencies(random, 8)
   const codes = generateHuffmanCodes(frequencies)

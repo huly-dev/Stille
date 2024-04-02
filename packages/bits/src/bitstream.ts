@@ -43,7 +43,7 @@ export function bitOutputStream(out: ByteOutStream): BitOutStream {
       buffer = buffer & ones(bit)
     },
     close: () => {
-      if (bit) out.writeByte(buffer & ones(bit))
+      if (bit > 0) out.writeByte(buffer << (8 - bit))
       out.close()
     },
   }
