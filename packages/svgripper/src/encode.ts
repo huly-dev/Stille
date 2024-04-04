@@ -7,7 +7,9 @@
 
 import { countFrequencies, generateHuffmanCodes, huffmanEncoder, numberOfBits, type BitOutStream } from '@huly/bits'
 import { add, bounds, mul, round, sub } from './math'
-import type { Element, Pt, SVG } from './svg'
+import type { Element, Svg } from './svg'
+import { initialPtWriter, writeFrequencyTable, writeRenderBox } from './svgr'
+import type { Pt } from './types'
 
 const scalePoints = (points: Pt[], scale: Pt): Pt[] => {
   let float: Pt = [0, 0]
@@ -33,10 +35,7 @@ const scaleElement = (element: Element, scale: Pt): Element => ({
   })),
 })
 
-const MAX_ABSOLUTE_BITS = 13
-const FREQUENCY_BITS = 5
-
-export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutStream, log: (message: string) => void) => {
+export const encodeSVGR = (svg: Svg, scale: Pt, out: BitOutStream, log: (message: string) => void) => {
   // const huffman = createHuffmanEncoder(codes, out)
 
   const { xy, wh } = svg
@@ -46,9 +45,7 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutStream, log: (message
   log(`rendering to ${renderBox[0]}x${renderBox[1]} box...`)
 
   const scaledElements = svg.elements.map((element) => scaleElement(element, scale))
-
-  out.writeBits(renderBox[0], MAX_ABSOLUTE_BITS)
-  out.writeBits(renderBox[1], MAX_ABSOLUTE_BITS)
+  writeRenderBox(out, renderBox)
 
   // build frequency table
 
@@ -67,13 +64,7 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutStream, log: (message
   log(`normalized to ${alphabet} symbols in alphabet`)
 
   const freq = countFrequencies(normalized, alphabet)
-  const maxFreq = Math.max(...freq)
-  const bitsPerFrequency = numberOfBits(maxFreq)
-  log(`frequencies: ${freq}, maximum frequency: ${maxFreq}, ${bitsPerFrequency} bits per frequency`)
-
-  out.writeBits(bitsPerFrequency, FREQUENCY_BITS)
-  out.writeBits(alphabet, MAX_ABSOLUTE_BITS)
-  freq.forEach((f) => out.writeBits(f, bitsPerFrequency))
+  writeFrequencyTable(out, freq, log)
 
   const codes = generateHuffmanCodes(freq)
   const huffman = huffmanEncoder(codes, out)
@@ -81,7 +72,7 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutStream, log: (message
   let segments = 0
   let current: Pt = [0, 0]
 
-  const writeSign = (value: number, out: BitOutStream) => out.writeBits(value < 0 ? 1 : 0, 1)
+  const pointWriter = initialPtWriter(box, huffman)
 
   scaledElements.forEach((element) => {
     switch (element.name) {
@@ -89,27 +80,12 @@ export const encodeSVGR = (svg: SVG, scale: Pt, out: BitOutStream, log: (message
         element.segments.forEach((segment) => {
           segments++
           const initial = segment.initial
-          const d = sub(sub(initial, current), min)
-          // console.log(`initial: ${initial}, current: ${current}, min: ${min}, d: ${d}, box: ${box}`)
-          if (d[0] >= -box[0] && d[0] <= box[0] && d[1] >= -box[1] && d[1] <= box[1]) {
-            // if (false) {
-            // console.log(`relative`)
-            out.writeBits(0, 1)
-            huffman.writeSymbol(Math.abs(d[0]))
-            writeSign(d[0], out)
-            huffman.writeSymbol(Math.abs(d[1]))
-            writeSign(d[1], out)
-          } else {
-            // console.log(`absolute`)
-            out.writeBits(1, 1)
-            out.writeBits(initial[0], MAX_ABSOLUTE_BITS)
-            writeSign(initial[0], out)
-            out.writeBits(initial[1], MAX_ABSOLUTE_BITS)
-            writeSign(initial[1], out)
-          }
+          pointWriter(sub(sub(initial, current), min))
+
           current = initial
           segment.lineTo.flatMap((pt) => sub(pt, min)).forEach(huffman.writeSymbol)
           if (!segment.closed) throw new Error('support unclosed path segments')
+
           huffman.writeSymbol(0)
           huffman.writeSymbol(0)
         })

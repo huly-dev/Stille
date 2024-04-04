@@ -6,8 +6,16 @@
  */
 
 export { base91OutStream } from './basex'
-export { bitOutStream, numberOfBits, singleBitInStream, type BitOutStream } from './bitstream'
-export { fileOutStream } from './filestream'
-export { countFrequencies, generateHuffmanCodes, huffmanDecode, huffmanEncoder, type HuffmanCodes } from './huffman'
+export { bitInStream, bitOutStream, numberOfBits, type BitInStream, type BitOutStream } from './bitstream'
+export { fileInStream, fileOutStream } from './filestream'
+export {
+  countFrequencies,
+  generateHuffmanCodes,
+  huffmanDecode,
+  huffmanEncoder,
+  type HuffmanCodes,
+  type SymbolInStream,
+  type SymbolOutStream,
+} from './huffman'
 export { byteArrayInStream, bytesCollector, stringCollector } from './streams'
 export type { ByteInStream, ByteOutStream, InStream, OutStream } from './types'

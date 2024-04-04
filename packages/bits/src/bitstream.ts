@@ -5,13 +5,13 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { ByteInStream, ByteOutStream, InStream, OutStream } from './types'
+import type { ByteInStream, ByteOutStream } from './types'
 
-export interface BitOutStream extends OutStream {
+export interface BitOutStream extends ByteOutStream {
   writeBits(value: number, length: number): void
 }
 
-export interface BitInStream extends InStream {
+export interface BitInStream extends ByteInStream {
   readBits(length: number): number
 }
 
@@ -28,20 +28,23 @@ export function bitOutStream(out: ByteOutStream): BitOutStream {
   let buffer = 0
   let bit = 0
 
+  const writeBits = (value: number, length: number) => {
+    if (value < 0 || length < 0) throw new Error(`bitOutputStream: negative argument`)
+
+    buffer = (buffer << length) | value
+    bit += length
+
+    while (bit >= 8) {
+      out.writeByte((buffer >>> (bit - 8)) & 0xff)
+      bit -= 8
+    }
+
+    buffer = buffer & ones(bit)
+  }
+
   return {
-    writeBits: (value: number, length: number) => {
-      if (value < 0 || length < 0) throw new Error(`bitOutputStream: negative argument`)
-
-      buffer = (buffer << length) | value
-      bit += length
-
-      while (bit >= 8) {
-        out.writeByte((buffer >>> (bit - 8)) & 0xff)
-        bit -= 8
-      }
-
-      buffer = buffer & ones(bit)
-    },
+    writeBits,
+    writeByte: (value: number) => writeBits(value, 8),
     close: () => {
       if (bit > 0) out.writeByte(buffer << (8 - bit))
       out.close()
@@ -49,20 +52,28 @@ export function bitOutStream(out: ByteOutStream): BitOutStream {
   }
 }
 
-export const singleBitInStream = (input: ByteInStream): BitInStream => {
+export const bitInStream = (input: ByteInStream): BitInStream => {
   let buffer = 0
   let bits = 0
 
+  const readBits = (length: number) => {
+    while (length > bits) {
+      const byte = input.readByte()
+      buffer = (buffer << 8) | byte
+      bits += 8
+    }
+
+    bits -= length
+    const value = buffer >>> bits
+    buffer = buffer & ones(bits)
+
+    return value
+  }
+
   return {
     available: () => bits > 0 || input.available(),
-    readBits: (length: number) => {
-      if (length !== 1) throw new Error(`singleBitInStream: only 1 bit supported: ${length}`)
-      if (bits === 0) {
-        buffer = input.readByte()
-        bits = 8
-      }
-      return (buffer >>> --bits) & 1
-    },
+    readBits,
+    readByte: () => readBits(8),
     close: input.close,
   }
 }

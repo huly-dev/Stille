@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { ByteOutStream } from './types'
+import type { ByteInStream, ByteOutStream } from './types'
 
 const BufferSize = 0x1000
 
@@ -29,5 +29,18 @@ export function fileOutStream(path: string): ByteOutStream {
       writer.write(byteArray.slice(0, pos))
       writer.end()
     },
+  }
+}
+
+export async function fileInStream(path: string): Promise<ByteInStream> {
+  const file = Bun.file(path)
+  const buffer = await file.arrayBuffer()
+  const byteArray = new Uint8Array(buffer)
+  let pos = 0
+
+  return {
+    available: () => pos < byteArray.length,
+    readByte: () => byteArray[pos++],
+    close: () => {},
   }
 }

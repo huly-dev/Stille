@@ -5,13 +5,13 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { BitInStream, BitOutStream, InStream, OutStream } from './types'
+import { type BitInStream, type BitOutStream } from './bitstream'
 
-export interface SymbolOutStream extends OutStream {
+export interface SymbolOutStream extends BitOutStream {
   writeSymbol(symbol: number): void
 }
 
-export interface SymbolInStream extends InStream {
+export interface SymbolInStream extends BitInStream {
   readSymbol(): number
 }
 
@@ -70,11 +70,13 @@ export const generateHuffmanCodes = (frequencies: FrequencyTable): HuffmanCodes 
   return codes
 }
 
-export const huffmanEncoder = (codes: HuffmanCodes, out: BitOutStream): SymbolOutStream => ({
+export const huffmanOutStream = (codes: HuffmanCodes, out: BitOutStream): SymbolOutStream => ({
   writeSymbol: (symbol: number) => {
     const code = codes[symbol]
     out.writeBits(code.value, code.length)
   },
+  writeBits: out.writeBits,
+  writeByte: out.writeByte,
   close: () => {
     const code = codes[-1]
     out.writeBits(code.value, code.length)
@@ -82,21 +84,45 @@ export const huffmanEncoder = (codes: HuffmanCodes, out: BitOutStream): SymbolOu
   },
 })
 
-export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: SymbolOutStream) => {
+export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): SymbolInStream => {
   const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
   const invertedCodes = new Map(invert)
+
   let buffer = 1
 
-  while (input.available()) {
-    buffer = (buffer << 1) | input.readBits(1)
-    const symbol = invertedCodes.get(buffer)
-    if (symbol !== undefined) {
-      if (symbol === -1) break
-      out.writeSymbol(symbol)
-      buffer = 1
-    }
+  return {
+    readSymbol: () => {
+      while (true) {
+        buffer = (buffer << 1) | input.readBits(1)
+        const symbol = invertedCodes.get(buffer)
+        if (symbol !== undefined) {
+          buffer = 1
+          return symbol
+        }
+      }
+    },
+    readBits: input.readBits,
+    readByte: input.readByte,
+    available: input.available,
+    close: input.close,
   }
 }
+
+// export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: SymbolOutStream) => {
+//   const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
+//   const invertedCodes = new Map(invert)
+//   let buffer = 1
+
+//   while (input.available()) {
+//     buffer = (buffer << 1) | input.readBits(1)
+//     const symbol = invertedCodes.get(buffer)
+//     if (symbol !== undefined) {
+//       if (symbol === -1) break
+//       out.writeSymbol(symbol)
+//       buffer = 1
+//     }
+//   }
+// }
 
 export const countFrequencies = (data: number[], symbols: number): number[] =>
   data.reduce((freq, symbol) => {
