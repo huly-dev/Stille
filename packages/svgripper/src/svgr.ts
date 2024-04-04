@@ -72,8 +72,8 @@ export const initialPtWriter = (box: Pt, out: SymbolOutStream) => (pt: Pt) => {
 //
 
 export const segmentWriter =
-  (min: Pt, box: Pt) =>
-  (current: Pt, segment: PathSegment, out: SymbolOutStream): Pt => {
+  (min: Pt, box: Pt, out: SymbolOutStream) =>
+  (current: Pt, segment: PathSegment): Pt => {
     let initial = segment.initial
     const delta = sub(sub(initial, current), min)
 
@@ -81,13 +81,14 @@ export const segmentWriter =
       out.writeBits(0, 1) // relative
       out.writeSymbol(Math.abs(delta[0]))
       out.writeSymbol(Math.abs(delta[1]))
+      writeSign(delta[0], out)
+      writeSign(delta[1], out)
     } else {
+      if (initial[0] < 0 || initial[1] < 0) throw new Error('absolute initial point must be positive')
       out.writeBits(1, 1) // absolute
       out.writeBits(initial[0], MAX_ABSOLUTE_BITS)
       out.writeBits(initial[1], MAX_ABSOLUTE_BITS)
     }
-    writeSign(initial[0], out)
-    writeSign(initial[1], out)
 
     segment.lineTo.forEach((pt) => {
       initial = add(initial, pt)
@@ -104,20 +105,26 @@ export const segmentWriter =
     return initial
   }
 
-const readPoint = (input: SymbolInStream): Pt => [input.readSymbol(), input.readSymbol()]
-
 export const segmentReader =
-  (min: Pt) =>
-  (current: Pt, input: SymbolInStream): { segment: PathSegment; current: Pt } => {
+  (min: Pt, input: SymbolInStream) =>
+  (current: Pt): { segment: PathSegment; current: Pt } => {
+    const readPoint = (): Pt => [input.readSymbol(), input.readSymbol()]
+    const readPointWithSign = (): Pt => {
+      const pt = readPoint()
+      return [input.readBits(1) === 0 ? pt[0] : -pt[0], input.readBits(1) === 0 ? pt[1] : -pt[1]]
+    }
+
     const abs = input.readBits(1) // relative or absolute
     const initial: Pt =
       abs === 0
-        ? add(add([input.readSymbol(), input.readSymbol()], current), min)
+        ? add(add(readPointWithSign(), current), min)
         : [input.readBits(MAX_ABSOLUTE_BITS), input.readBits(MAX_ABSOLUTE_BITS)]
 
     current = initial
     const lineTo = []
-    for (let pt = readPoint(input); (pt = readPoint(input)); pt[0] !== 0 && pt[1] !== 0) {
+    while (true) {
+      const pt = readPoint()
+      if (pt[0] === 0 && pt[1] === 0) break
       const p = add(pt, min)
       lineTo.push(p)
       current = add(initial, p)

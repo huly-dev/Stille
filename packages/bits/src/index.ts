@@ -11,8 +11,6 @@ export { fileInStream, fileOutStream } from './filestream'
 export {
   countFrequencies,
   generateHuffmanCodes,
-  huffmanDecode,
-  huffmanEncoder,
   type HuffmanCodes,
   type SymbolInStream,
   type SymbolOutStream,

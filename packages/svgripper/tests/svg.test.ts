@@ -7,9 +7,8 @@
 
 import { expect, test } from 'bun:test'
 
-import { analyzeSVG, scale } from '../src/analyze'
-import { encodeSVG } from '../src/encode'
-import { TokenType, parsePath, parseSVG, tokenize } from '../src/parse'
+import { analyzeSVG } from '../src/analyze'
+import { TokenType, parsePath, parseSVG, tokenize } from '../src/svg'
 
 test('tokenize1', () => {
   const d = tokenize('M 0 8 l 1.2 -3.14 z')
