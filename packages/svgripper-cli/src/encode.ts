@@ -5,14 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import {
-  base91OutputStream,
-  bitToByteOutputStream,
-  fileOutputStream,
-  isStringOutputStream,
-  stringOutputStream,
-  type BinaryOutputStream,
-} from '@huly/bits'
+import { base91OutStream, bitOutStream, fileOutStream, stringCollector } from '@huly/bits'
 import { encodeSVGR, parseSVG, type Pt } from 'svgripper'
 
 type Options = {
@@ -30,13 +23,21 @@ function getRatio(viewBox: Pt, options: Options): Pt {
   return [ratio, ratio]
 }
 
-const createOutputStream = (options: Options): BinaryOutputStream => {
+const createOutput = (options: Options) => {
   if (options.binary) {
     if (!options.output) throw new Error('output file is required for binary output')
-    return fileOutputStream(options.output)
+    return {
+      stream: fileOutStream(options.output),
+      result: () => {
+        throw new Error('binary output does not support result()')
+      },
+    }
   }
-  const stringOS = stringOutputStream()
-  return base91OutputStream(stringOS)
+  const stringOS = stringCollector()
+  return {
+    stream: base91OutStream(stringOS),
+    result: stringOS.result,
+  }
 }
 
 export async function encode(file: string, log: (message: string) => void, options: Options) {
@@ -48,11 +49,11 @@ export async function encode(file: string, log: (message: string) => void, optio
   const svg = parseSVG(svgText)
   const scale = getRatio(svg.wh, options)
 
-  const out = createOutputStream(options)
-  const bitStream = bitToByteOutputStream(out)
+  const out = createOutput(options)
+  const bitStream = bitOutStream(out.stream)
 
   encodeSVGR(svg, scale, bitStream, log)
   bitStream.close()
 
-  if (isStringOutputStream(out)) console.log(out.result())
+  if (!options.binary) console.log(out.result())
 }
