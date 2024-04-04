@@ -253,24 +253,29 @@ export function parseSVG(svg: string): Svg {
   }
 }
 
-// export const mapSVG = (svg: SVG, f: (pt: Pt) => Pt) => ({
-//   viewBox: {
-//     xy: f(svg.xy), // only 0 allowed for now
-//     wh: f(svg.wh),
-//   },
-//   elements: svg.elements.map(
-//     (element): Element => ({
-//       name: element.name,
-//       segments: element.segments.map(
-//         (segment: PathSegment): PathSegment => ({
-//           initial: f(segment.initial),
-//           lineTo: segment.lineTo.map(f),
-//           closed: segment.closed,
-//         }),
-//       ),
-//     }),
-//   ),
-// })
+export interface SvgRenderer {
+  renderBox?: (box: Pt) => void
+  renderBeginPath?: () => void
+  renderBeginSegment?: (last: Pt, initial: Pt) => void
+  renderLineTo?: (pt: Pt) => void
+  renderEndSengment?: (closed: boolean) => void
+  renderEndPath?: () => void
+}
 
-// export const getSegments = (svg: SVG) =>
-//   svg.elements.map((element) => element.segments.map((segment) => segment.lineTo))
+export const renderSVG = (svg: Svg, renderer: SvgRenderer) => {
+  renderer.renderBox?.(svg.wh)
+  svg.elements.forEach((element) => {
+    renderer.renderBeginPath?.()
+    let last: Pt = [0, 0]
+    element.segments.forEach((segment) => {
+      renderer.renderBeginSegment?.(last, segment.initial)
+      last = segment.initial
+      segment.lineTo.forEach((pt) => {
+        renderer.renderLineTo?.(pt)
+        last = add(last, pt)
+      })
+      renderer.renderEndSengment?.(segment.closed)
+    })
+    renderer.renderEndPath?.()
+  })
+}

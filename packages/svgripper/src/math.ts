@@ -11,11 +11,12 @@ import type { Pt } from './types'
 type F = (pt: Pt) => Pt
 
 export const round = (point: Pt): Pt => [Math.round(point[0]), Math.round(point[1])]
-export const abs = (point: Pt): Pt => [Math.abs(point[0]), Math.abs(point[1])]
+// export const abs = (point: Pt): Pt => [Math.abs(point[0]), Math.abs(point[1])]
 export const mul = (x: Pt, y: Pt): Pt => [x[0] * y[0], x[1] * y[1]]
 export const add = (x: Pt, y: Pt): Pt => [x[0] + y[0], x[1] + y[1]]
 export const sub = (x: Pt, y: Pt): Pt => [x[0] - y[0], x[1] - y[1]]
-export const inside = (pt: Pt, box: Pt): boolean => pt[0] >= 0 && pt[0] <= box[0] && pt[1] >= 0 && pt[1] <= box[1]
+export const inside = (pt: Pt, min: Pt, max: Pt): boolean =>
+  pt[0] >= min[0] && pt[0] <= max[0] && pt[1] >= min[1] && pt[1] <= max[1]
 
 export const sum = (points: Pt[]): Pt => points.reduce((acc, point) => [acc[0] + point[0], acc[1] + point[1]])
 
@@ -78,6 +79,6 @@ export const bounds = (points: Pt[]) => {
   )
   return {
     min: [minX, minY] as Pt,
-    box: [maxX - minX, maxY - minY] as Pt,
+    max: [maxX, maxY] as Pt,
   }
 }

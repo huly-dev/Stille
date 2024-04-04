@@ -5,10 +5,10 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { countFrequencies, generateHuffmanCodes, huffmanEncoder, numberOfBits, type BitOutStream } from '@huly/bits'
+import { countFrequencies, generateHuffmanCodes, type BitOutStream } from '@huly/bits'
 import { add, bounds, mul, round, sub } from './math'
 import type { Element, Svg } from './svg'
-import { initialPtWriter, writeFrequencyTable, writeRenderBox } from './svgr'
+import { segmentWriter, writeFrequencyTable } from './svgr'
 import type { Pt } from './types'
 
 const scalePoints = (points: Pt[], scale: Pt): Pt[] => {
@@ -36,8 +36,6 @@ const scaleElement = (element: Element, scale: Pt): Element => ({
 })
 
 export const encodeSVGR = (svg: Svg, scale: Pt, out: BitOutStream, log: (message: string) => void) => {
-  // const huffman = createHuffmanEncoder(codes, out)
-
   const { xy, wh } = svg
   if (xy[0] !== 0 || xy[1] !== 0) throw new Error('SVG file must have viewBox starting at 0,0')
 
@@ -68,27 +66,12 @@ export const encodeSVGR = (svg: Svg, scale: Pt, out: BitOutStream, log: (message
 
   const codes = generateHuffmanCodes(freq)
   const huffman = huffmanEncoder(codes, out)
-
-  let segments = 0
-  let current: Pt = [0, 0]
-
-  const pointWriter = initialPtWriter(box, huffman)
+  const writer = segmentWriter(min, box, huffman)
 
   scaledElements.forEach((element) => {
     switch (element.name) {
       case 'path':
-        element.segments.forEach((segment) => {
-          segments++
-          const initial = segment.initial
-          pointWriter(sub(sub(initial, current), min))
-
-          current = initial
-          segment.lineTo.flatMap((pt) => sub(pt, min)).forEach(huffman.writeSymbol)
-          if (!segment.closed) throw new Error('support unclosed path segments')
-
-          huffman.writeSymbol(0)
-          huffman.writeSymbol(0)
-        })
+        element.segments.reduce(writer, [0, 0])
         break
       default:
         throw new Error(`Unsupported element: ${element.name}`)
@@ -96,5 +79,4 @@ export const encodeSVGR = (svg: Svg, scale: Pt, out: BitOutStream, log: (message
   })
 
   huffman.close()
-  log(`encoded ${segments} segments`)
 }

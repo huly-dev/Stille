@@ -5,7 +5,7 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { fileInStream } from "@huly/bits"
+import { fileInStream } from '@huly/bits'
 
 type Options = {
   binary?: boolean
@@ -15,5 +15,4 @@ type Options = {
 export async function decode(file: string, log: (message: string) => void, options: Options) {
   log('decoding svgr format...')
   const svgr = await fileInStream(file)
-  svgr.
 }
