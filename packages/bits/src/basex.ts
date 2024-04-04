@@ -5,22 +5,22 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import type { ByteStream } from './types'
+import type { ByteOutStream } from './types'
 
-function baseXOutputStream(base: number, bytesBuffer: number, baseBuffer: number, out: ByteStream): ByteStream {
+function baseXOutStream(base: number, bytesBuffer: number, baseBuffer: number, out: ByteOutStream): ByteOutStream {
   const Base = BigInt(base)
   const Byte = BigInt(256)
 
   if (Byte ** BigInt(bytesBuffer) > Base ** BigInt(baseBuffer))
     throw new Error('encodeBaseX: `baseBuffer` too small for `bytesBuffer`')
 
-  const send = (char: BigInt) => out.byte(Number(char))
+  const send = (char: BigInt) => out.writeByte(Number(char))
 
   let buffer = 1n
   let bytes = 0
 
   return {
-    byte(value: number) {
+    writeByte(value: number) {
       buffer *= Byte
       buffer += BigInt(value)
       if (++bytes === bytesBuffer) {
@@ -47,12 +47,12 @@ const firstChar = 0x21
 const lastChar = 0x7e
 const base91 = lastChar - firstChar + 1 - special.length
 
-export const base91OutputStream = (out: ByteStream) =>
-  baseXOutputStream(base91, 13, 16, {
-    byte(x: number) {
+export const base91OutStream = (out: ByteOutStream) =>
+  baseXOutStream(base91, 13, 16, {
+    writeByte(x: number) {
       const char = x + firstChar
       const i = special.indexOf(String.fromCharCode(char))
-      out.byte(i >= 0 ? lastChar - i : char)
+      out.writeByte(i >= 0 ? lastChar - i : char)
     },
     close: out.close,
   })

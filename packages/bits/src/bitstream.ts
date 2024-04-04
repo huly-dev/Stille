@@ -24,7 +24,7 @@ const ones = (pow: number) => (pow === 32 ? MAX_UINT32 : (1 << pow) - 1)
  * @param out - A callback function to handle the output of each chunk.
  * @returns Bits encoder with `writeBits` and `flushBits` methods.
  */
-export function bitOutputStream(out: ByteOutStream): BitOutStream {
+export function bitOutStream(out: ByteOutStream): BitOutStream {
   let buffer = 0
   let bit = 0
 

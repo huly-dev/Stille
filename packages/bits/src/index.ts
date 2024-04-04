@@ -5,9 +5,9 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
-// export { base91OutputStream, isStringOutputStream, stringOutputStream, type StringOutputStream } from './basex'
-export { bitOutputStream, numberOfBits, singleBitInStream } from './bitstream'
-export { fileOutputStream } from './filestream'
+export { base91OutStream } from './basex'
+export { bitOutStream, numberOfBits, singleBitInStream, type BitOutStream } from './bitstream'
+export { fileOutStream } from './filestream'
 export { countFrequencies, generateHuffmanCodes, huffmanDecode, huffmanEncoder, type HuffmanCodes } from './huffman'
-export { byteArrayInStream, bytesCollector } from './streams'
+export { byteArrayInStream, bytesCollector, stringCollector } from './streams'
 export type { ByteInStream, ByteOutStream, InStream, OutStream } from './types'
