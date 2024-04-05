@@ -73,9 +73,10 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
   renderSVG(svg, {
     renderBeginPath: () => pointOut.writeBits(1, 1),
     renderBeginSegment: (last, initial) => pointOut.writeAny(last, initial),
-    renderLineTo: (pt) => pointOut.writeRelative(pt),
+    renderLineTo: (pt) => {
+      if (pt[0] !== 0 || pt[1] !== 0) pointOut.writeRelative(pt)
+    },
     renderEndSegment: () => pointOut.writeRelative([0, 0]),
-    // renderEndPath: () => pointOut.writeAbsolute([MAX_COORDINATE, MAX_COORDINATE]),
   })
   pointOut.writeBits(0, 1)
   pointOut.close()
