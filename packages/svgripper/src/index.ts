@@ -5,8 +5,8 @@
  * © 2024 Hardcore Engineering Inc. All Rights Reserved.
  */
 
-export { encodeSVGR } from './encode'
-export { bounds, mapSVG, mul, reduceVectors, round, sum } from './math'
-export { parseSVG } from './parse'
-export { type Pt } from './svg'
+export { add, bounds, mapSVG, mul, reduceVectors, round, sub, sum } from './math'
+export { parseSVG, renderSVG, type Element, type PathSegment, type Svg } from './svg'
+export { decodeSVGR, encodeSVGR } from './svgr'
+export { type Pt } from './types'
 

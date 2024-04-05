@@ -7,7 +7,7 @@
 
 import { generateHuffmanCodes, type BitInStream } from '@huly/bits'
 import { huffmanInStream } from '@huly/bits/src/huffman'
-import { readFrequencyTable, readRenderBox, segmentReader } from './svgr'
+import { readFrequencyTable } from './svgr'
 
 export const decodeSVGR = (input: BitInStream, log: (message: string) => void) => {
   const renderBox = readRenderBox(input)

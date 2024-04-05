@@ -5,7 +5,9 @@
 // © 2024 Hardcore Engineering Inc. All Rights Reserved.
 //
 
-import { fileInStream } from '@huly/bits'
+import { bitInStream, fileInStream } from '@huly/bits'
+
+import { decodeSVGR } from 'svgripper'
 
 type Options = {
   binary?: boolean
@@ -15,4 +17,6 @@ type Options = {
 export async function decode(file: string, log: (message: string) => void, options: Options) {
   log('decoding svgr format...')
   const svgr = await fileInStream(file)
+  const svg = decodeSVGR(bitInStream(svgr), log)
+  console.log(svg)
 }

@@ -8,7 +8,6 @@
 import { expect, test } from 'bun:test'
 
 import type { SymbolInStream, SymbolOutStream } from '@huly/bits'
-import { segmentReader, segmentWriter } from '../src/svgr'
 
 test('encode Segment', () => {
   let output: number[] = []

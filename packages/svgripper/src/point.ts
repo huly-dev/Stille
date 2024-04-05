@@ -13,9 +13,9 @@ const MAX_ABSOLUTE_BITS = 13
 export const MAX_COORDINATE = (1 << MAX_ABSOLUTE_BITS) - 1
 
 export const writeAbsolute = (out: BitOutStream, pt: Pt) => {
-  out.writeBits(pt[0], MAX_ABSOLUTE_BITS)
+  out.writeBits(Math.abs(pt[0]), MAX_ABSOLUTE_BITS)
   out.writeBits(pt[0] < 0 ? 1 : 0, 1)
-  out.writeBits(pt[1], MAX_ABSOLUTE_BITS)
+  out.writeBits(Math.abs(pt[1]), MAX_ABSOLUTE_BITS)
   out.writeBits(pt[1] < 0 ? 1 : 0, 1)
 }
 

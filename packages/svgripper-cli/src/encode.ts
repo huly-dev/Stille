@@ -6,7 +6,19 @@
 //
 
 import { base91OutStream, bitOutStream, fileOutStream, stringCollector } from '@huly/bits'
-import { encodeSVGR, parseSVG, type Pt } from 'svgripper'
+import {
+  add,
+  encodeSVGR,
+  mul,
+  parseSVG,
+  renderSVG,
+  round,
+  sub,
+  type Element,
+  type PathSegment,
+  type Pt,
+  type Svg,
+} from 'svgripper'
 
 type Options = {
   output?: string
@@ -40,6 +52,36 @@ const createOutput = (options: Options) => {
   }
 }
 
+const scaleSVG = (svg: Svg, scale: Pt): Svg => {
+  let result: Svg | undefined
+  let currentElement: Element
+  let currentSegment: PathSegment
+  let current = [0, 0] as Pt
+  let currentInt = [0, 0] as Pt
+
+  renderSVG(svg, {
+    renderBox: (box: Pt) => (result = { xy: [0, 0], wh: mul(box, scale), elements: [] }),
+    renderBeginPath: () => (currentElement = { name: 'path', segments: [] }),
+    renderBeginSegment: (_: Pt, initial: Pt) => {
+      currentSegment = { initial: mul(initial, scale), lineTo: [], closed: true }
+      current = currentSegment.initial
+      currentInt = round(current)
+    },
+    renderLineTo: (pt: Pt) => {
+      const scaled = mul(pt, scale)
+      current = add(current, scaled)
+      const nextInt = round(current)
+      const d = sub(nextInt, currentInt)
+      currentInt = nextInt
+      currentSegment.lineTo.push(d)
+    },
+    renderEndSegment: () => currentElement.segments.push(currentSegment),
+    renderEndPath: () => result!.elements.push(currentElement),
+  })
+
+  return result!
+}
+
 export async function encode(file: string, log: (message: string) => void, options: Options) {
   log('converting svg file to svgr format...')
 
@@ -48,11 +90,12 @@ export async function encode(file: string, log: (message: string) => void, optio
 
   const svg = parseSVG(svgText)
   const scale = getRatio(svg.wh, options)
+  const scaled = scaleSVG(svg, scale)
 
   const out = createOutput(options)
   const bitStream = bitOutStream(out.stream)
 
-  encodeSVGR(svg, scale, bitStream, log)
+  encodeSVGR(scaled, bitStream, log)
   bitStream.close()
 
   if (!options.binary) console.log(out.result())

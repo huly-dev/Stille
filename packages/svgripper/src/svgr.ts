@@ -15,8 +15,8 @@ import {
 } from '@huly/bits'
 import { huffmanOutStream } from '@huly/bits/src/huffman'
 import { add, bounds, sub } from './math'
-import { MAX_COORDINATE, pointInStream, pointOutStream, readAbsolute, writeAbsolute, type PointInStream } from './point'
-import { renderSVG, type PathSegment, type Svg } from './svg'
+import { MAX_COORDINATE, pointInStream, pointOutStream, readAbsolute, writeAbsolute } from './point'
+import { renderSVG, type Svg } from './svg'
 import type { Pt } from './types'
 
 const FREQUENCY_BITS = 5
@@ -44,22 +44,22 @@ export const readFrequencyTable = (input: BitInStream, log: (message: string) =>
 
 ///
 
-export const segmentReader =
-  (input: PointInStream) =>
-  (current: Pt): { segment: PathSegment; current: Pt } => {
-    let initial = input.readAny(current)
-    const lineTo = []
-    while (true) {
-      const pt = input.readRelative()
-      if (pt[0] === 0 && pt[1] === 0) break
-      lineTo.push(p)
-      current = add(initial, p)
-    }
-    return {
-      segment: { initial, lineTo, closed: true },
-      current,
-    }
-  }
+// export const segmentReader =
+//   (input: PointInStream) =>
+//   (current: Pt): { segment: PathSegment; current: Pt } => {
+//     let initial = input.readAny(current)
+//     const lineTo = []
+//     while (true) {
+//       const pt = input.readRelative()
+//       if (pt[0] === 0 && pt[1] === 0) break
+//       lineTo.push(p)
+//       current = add(initial, p)
+//     }
+//     return {
+//       segment: { initial, lineTo, closed: true },
+//       current,
+//     }
+//   }
 
 ///
 

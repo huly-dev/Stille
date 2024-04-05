@@ -258,7 +258,7 @@ export interface SvgRenderer {
   renderBeginPath?: () => void
   renderBeginSegment?: (last: Pt, initial: Pt) => void
   renderLineTo?: (pt: Pt) => void
-  renderEndSengment?: (closed: boolean) => void
+  renderEndSegment?: (closed: boolean) => void
   renderEndPath?: () => void
 }
 
@@ -274,7 +274,7 @@ export const renderSVG = (svg: Svg, renderer: SvgRenderer) => {
         renderer.renderLineTo?.(pt)
         last = add(last, pt)
       })
-      renderer.renderEndSengment?.(segment.closed)
+      renderer.renderEndSegment?.(segment.closed)
     })
     renderer.renderEndPath?.()
   })
