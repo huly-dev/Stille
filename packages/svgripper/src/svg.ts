@@ -253,29 +253,30 @@ export function parseSVG(svg: string): Svg {
   }
 }
 
-export interface SvgRenderer {
-  renderBox?: (box: Pt) => void
-  renderBeginPath?: () => void
-  renderBeginSegment?: (last: Pt, initial: Pt) => void
-  renderLineTo?: (pt: Pt) => void
-  renderEndSegment?: (closed: boolean) => void
-  renderEndPath?: () => void
+export interface SvgRenderer<S, E, G> {
+  renderBox?: (box: Pt) => S
+  renderBeginPath?: () => E
+  renderBeginSegment?: (last: Pt, initial: Pt) => G
+  renderLineTo?: (pt: Pt, segment?: G) => void
+  renderEndSegment?: (closed: boolean, element?: E, segment?: G) => void
+  renderEndPath?: (svg?: S, element?: E) => void
 }
 
-export const renderSVG = (svg: Svg, renderer: SvgRenderer) => {
-  renderer.renderBox?.(svg.wh)
+export const renderSVG = <S, E, G>(svg: Svg, renderer: SvgRenderer<S, E, G>): S | undefined => {
+  const result = renderer.renderBox?.(svg.wh)
   svg.elements.forEach((element) => {
-    renderer.renderBeginPath?.()
+    const e = renderer.renderBeginPath?.()
     let last: Pt = [0, 0]
     element.segments.forEach((segment) => {
-      renderer.renderBeginSegment?.(last, segment.initial)
+      const g = renderer.renderBeginSegment?.(last, segment.initial)
       last = segment.initial
       segment.lineTo.forEach((pt) => {
-        renderer.renderLineTo?.(pt)
+        renderer.renderLineTo?.(pt, g)
         last = add(last, pt)
       })
-      renderer.renderEndSegment?.(segment.closed)
+      renderer.renderEndSegment?.(segment.closed, e, g)
     })
-    renderer.renderEndPath?.()
+    renderer.renderEndPath?.(result, e)
   })
+  return result
 }

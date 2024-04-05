@@ -53,33 +53,29 @@ const createOutput = (options: Options) => {
 }
 
 const scaleSVG = (svg: Svg, scale: Pt): Svg => {
-  let result: Svg | undefined
-  let currentElement: Element
-  let currentSegment: PathSegment
   let current = [0, 0] as Pt
   let currentInt = [0, 0] as Pt
 
-  renderSVG(svg, {
-    renderBox: (box: Pt) => (result = { xy: [0, 0], wh: mul(box, scale), elements: [] }),
-    renderBeginPath: () => (currentElement = { name: 'path', segments: [] }),
+  return renderSVG(svg, {
+    renderBox: (box: Pt): Svg => ({ xy: [0, 0], wh: mul(box, scale), elements: [] }),
+    renderBeginPath: (): Element => ({ name: 'path', segments: [] }),
     renderBeginSegment: (_: Pt, initial: Pt) => {
-      currentSegment = { initial: mul(initial, scale), lineTo: [], closed: true }
-      current = currentSegment.initial
+      const segment = { initial: mul(initial, scale), lineTo: [], closed: true }
+      current = segment.initial
       currentInt = round(current)
+      return segment
     },
-    renderLineTo: (pt: Pt) => {
+    renderLineTo: (pt: Pt, segment?: PathSegment) => {
       const scaled = mul(pt, scale)
       current = add(current, scaled)
       const nextInt = round(current)
       const d = sub(nextInt, currentInt)
       currentInt = nextInt
-      currentSegment.lineTo.push(d)
+      segment?.lineTo.push(d)
     },
-    renderEndSegment: () => currentElement.segments.push(currentSegment),
-    renderEndPath: () => result!.elements.push(currentElement),
-  })
-
-  return result!
+    renderEndSegment: (_: boolean, element?: Element, segment?: PathSegment) => element?.segments.push(segment!),
+    renderEndPath: (svg?: Svg, element?: Element) => svg?.elements.push(element!),
+  })!
 }
 
 export async function encode(file: string, log: (message: string) => void, options: Options) {
