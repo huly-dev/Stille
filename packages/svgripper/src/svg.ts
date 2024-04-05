@@ -254,29 +254,41 @@ export function parseSVG(svg: string): Svg {
 }
 
 export interface SvgRenderer<S, E, G> {
-  renderBox?: (box: Pt) => S
-  renderBeginPath?: () => E
-  renderBeginSegment?: (last: Pt, initial: Pt) => G
-  renderLineTo?: (pt: Pt, segment?: G) => void
-  renderEndSegment?: (closed: boolean, element?: E, segment?: G) => void
-  renderEndPath?: (svg?: S, element?: E) => void
+  renderBox: (box: Pt) => S
+  renderBeginPath: () => E
+  renderBeginSegment: (last: Pt, initial: Pt) => G
+  renderLineTo: (pt: Pt, segment: G) => G
+  renderEndSegment: (closed: boolean, element: E, segment: G) => E
+  renderEndPath: (svg: S, element: E) => S
+  renderEndDocument: (svg: S) => S
 }
 
-export const renderSVG = <S, E, G>(svg: Svg, renderer: SvgRenderer<S, E, G>): S | undefined => {
-  const result = renderer.renderBox?.(svg.wh)
+export const renderSVG = <S, E, G>(svg: Svg, renderer: SvgRenderer<S, E, G>): S => {
+  let result = renderer.renderBox(svg.wh)
   svg.elements.forEach((element) => {
-    const e = renderer.renderBeginPath?.()
+    let e = renderer.renderBeginPath()
     let last: Pt = [0, 0]
     element.segments.forEach((segment) => {
-      const g = renderer.renderBeginSegment?.(last, segment.initial)
+      let g = renderer.renderBeginSegment(last, segment.initial)
       last = segment.initial
       segment.lineTo.forEach((pt) => {
-        renderer.renderLineTo?.(pt, g)
+        g = renderer.renderLineTo(pt, g)
         last = add(last, pt)
       })
-      renderer.renderEndSegment?.(segment.closed, e, g)
+      e = renderer.renderEndSegment(segment.closed, e, g)
     })
-    renderer.renderEndPath?.(result, e)
+    result = renderer.renderEndPath(result, e)
   })
-  return result
+  return renderer.renderEndDocument(result)
 }
+
+export const generateSVG = (svg: Svg): string =>
+  renderSVG(svg, {
+    renderBox: (box) => `<svg viewBox="0 0 ${box[0]} ${box[1]}">`,
+    renderBeginPath: () => '<path d="',
+    renderBeginSegment: (_: Pt, initial: Pt) => `M${initial[0]} ${initial[1]}`,
+    renderLineTo: (pt: Pt, segment: string) => segment + `l${pt[0]} ${pt[1]}`,
+    renderEndSegment: (_: boolean, element: string, segment: string) => element + segment + 'Z',
+    renderEndPath: (svg, element) => svg + element + '" />',
+    renderEndDocument: (svg) => svg + '</svg>',
+  })

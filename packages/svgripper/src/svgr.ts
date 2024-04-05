@@ -46,8 +46,13 @@ export const readFrequencyTable = (input: BitInStream, log: (message: string) =>
 export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) => void) => {
   const points: Pt[] = []
   renderSVG(svg, {
+    renderBox: () => {},
+    renderBeginPath: () => {},
+    renderBeginSegment: () => {},
     renderLineTo: (pt) => points.push(pt),
-    renderEndPath: () => points.push([0, 0]),
+    renderEndSegment: () => points.push([0, 0]),
+    renderEndPath: () => {},
+    renderEndDocument: () => {},
   })
 
   const { min, max } = bounds(points)
@@ -71,12 +76,15 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
 
   const pointOut = pointOutStream(min, max, huffman)
   renderSVG(svg, {
+    renderBox: () => {},
     renderBeginPath: () => pointOut.writeBits(1, 1),
     renderBeginSegment: (last, initial) => pointOut.writeAny(last, initial),
     renderLineTo: (pt) => {
       if (pt[0] !== 0 || pt[1] !== 0) pointOut.writeRelative(pt)
     },
     renderEndSegment: () => pointOut.writeRelative([0, 0]),
+    renderEndPath: () => {},
+    renderEndDocument: () => {},
   })
   pointOut.writeBits(0, 1)
   pointOut.close()

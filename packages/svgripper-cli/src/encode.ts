@@ -65,17 +65,25 @@ const scaleSVG = (svg: Svg, scale: Pt): Svg => {
       currentInt = round(current)
       return segment
     },
-    renderLineTo: (pt: Pt, segment?: PathSegment) => {
+    renderLineTo: (pt: Pt, segment: PathSegment) => {
       const scaled = mul(pt, scale)
       current = add(current, scaled)
       const nextInt = round(current)
       const d = sub(nextInt, currentInt)
       currentInt = nextInt
-      segment?.lineTo.push(d)
+      segment.lineTo.push(d)
+      return segment
     },
-    renderEndSegment: (_: boolean, element?: Element, segment?: PathSegment) => element?.segments.push(segment!),
-    renderEndPath: (svg?: Svg, element?: Element) => svg?.elements.push(element!),
-  })!
+    renderEndSegment: (_: boolean, element: Element, segment: PathSegment) => {
+      element.segments.push(segment)
+      return element
+    },
+    renderEndPath: (svg: Svg, element: Element) => {
+      svg.elements.push(element)
+      return svg
+    },
+    renderEndDocument: (svg: Svg) => svg,
+  })
 }
 
 export async function encode(file: string, log: (message: string) => void, options: Options) {
