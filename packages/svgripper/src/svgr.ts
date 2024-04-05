@@ -10,11 +10,11 @@ import {
   countFrequencies,
   generateHuffmanCodes,
   huffmanInStream,
+  huffmanOutStream,
   numberOfBits,
   type BitInStream,
   type BitOutStream,
 } from '@huly/bits'
-import { huffmanOutStream } from '@huly/bits/src/huffman'
 import { add, bounds, sub } from './math'
 import { pointInStream, pointOutStream, readAbsolute, writeAbsolute } from './point'
 import { renderSVG, type Svg } from './svg'
@@ -23,22 +23,19 @@ import type { Pt } from './types'
 const FREQUENCY_BITS = 5
 const ALPHABET_BITS = 13
 
-export const writeFrequencyTable = (out: BitOutStream, frequencies: number[], log: (message: string) => void) => {
+export const writeFrequencyTable = (out: BitOutStream, frequencies: number[]) => {
   const maxFreq = Math.max(...frequencies)
   const bitsPerFrequency = numberOfBits(maxFreq)
 
-  log(`frequencies: ${frequencies}, maximum frequency: ${maxFreq}, ${bitsPerFrequency} bits per frequency`)
-
   out.writeBits(bitsPerFrequency, FREQUENCY_BITS)
   out.writeBits(frequencies.length, ALPHABET_BITS)
+
   frequencies.forEach((f) => out.writeBits(f, bitsPerFrequency))
 }
 
-export const readFrequencyTable = (input: BitInStream, log: (message: string) => void): number[] => {
+export const readFrequencyTable = (input: BitInStream): number[] => {
   const bitsPerFrequency = input.readBits(FREQUENCY_BITS)
   const count = input.readBits(ALPHABET_BITS)
-  log(`frequencies: ${count}, ${bitsPerFrequency} bits per frequency`)
-
   return Array.from({ length: count }, () => input.readBits(bitsPerFrequency))
 }
 
@@ -67,7 +64,7 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
   log(`converted to ${alphabet} symbols in alphabet`)
 
   const freq = countFrequencies(symbols, alphabet)
-  writeFrequencyTable(out, freq, log)
+  writeFrequencyTable(out, freq)
 
   writeAbsolute(out, svg.wh)
   writeAbsolute(out, min)
@@ -92,7 +89,7 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
 }
 
 export const decodeSVGR = (input: BitInStream, log: (message: string) => void): Svg => {
-  const frequencyTable = readFrequencyTable(input, log)
+  const frequencyTable = readFrequencyTable(input)
   const codes = generateHuffmanCodes(frequencyTable)
 
   const viewBox = readAbsolute(input)
@@ -106,7 +103,6 @@ export const decodeSVGR = (input: BitInStream, log: (message: string) => void): 
   while (true) {
     if (pointIn.readBits(1) === 0) break
     let initial = pointIn.readAny(current)
-    log(`initial: ${initial}`)
     const lineTo = []
     while (true) {
       const pt = pointIn.readRelative()

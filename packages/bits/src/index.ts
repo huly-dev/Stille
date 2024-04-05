@@ -13,6 +13,7 @@ export {
   countFrequencies,
   generateHuffmanCodes,
   huffmanInStream,
+  huffmanOutStream,
   type HuffmanCodes,
   type SymbolInStream,
   type SymbolOutStream,
