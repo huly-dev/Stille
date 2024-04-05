@@ -1,3 +1,10 @@
+//
+//   Huly® Platform™ — Development Tools and Libraries | Stille
+//   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0)
+//
+// • undefined/play.ts
+// © 2024 Hardcore Engineering. All Rights Reserved.
+//
 import { countFrequencies } from '@huly/bits'
 import { analyze, ensureBits, scaleSVG } from './analyze'
 import { parseSVG } from './parse'

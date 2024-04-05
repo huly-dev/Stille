@@ -1,8 +1,9 @@
 //
-//   Huly® Platform™ Tools
-//   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0).
+//   Huly® Platform™ — Development Tools and Libraries | Stille
+//   Licensed under the Eclipse Public License v2.0 (SPDX: EPL-2.0)
 //
-// © 2024 Hardcore Engineering Inc. All Rights Reserved.
+// • bits/streams.ts
+// © 2024 Hardcore Engineering. All Rights Reserved.
 //
 
 import type { ByteInStream, ByteOutStream } from './types'

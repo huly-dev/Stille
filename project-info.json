@@ -1,0 +1,20 @@
+{
+  "package.json": {
+    "version": "1.0.0-alpha.1",
+    "description": "Huly® Platform™ — Development Tools and Libraries",
+    "homepage": "https://huly.dev",
+    "license": "EPL-2.0",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/huly-dev/Stille.git"
+    },
+    "author": "Hardcore Engineering <hey@huly.io> (https://huly.dev)",
+    "contributors": ["Andrey Platov <andrey@hardcoreeng.com>"]
+  },
+  "other": {
+    "company": "Hardcore Engineering",
+    "codename": "Stille",
+    "full_license": "Eclipse Public License v2.0",
+    "year_start": "2024"
+  }
+}

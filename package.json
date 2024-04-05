@@ -2,7 +2,9 @@
   "name": "stille",
   "private": false,
   "workspaces": ["packages/*"],
-  "scripts": {},
+  "scripts": {
+    "update-info": "bun ./dev/update-info.ts"
+  },
   "devDependencies": {
     "prettier": "^3.2.5"
   }

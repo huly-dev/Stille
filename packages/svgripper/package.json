@@ -12,5 +12,17 @@
   },
   "dependencies": {
     "sax": "^1.3.0"
-  }
+  },
+  "version": "1.0.0-alpha.1+20240405-sha.8b11042",
+  "description": "Huly® Platform™ — Development Tools and Libraries",
+  "homepage": "https://huly.dev",
+  "license": "EPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huly-dev/Stille.git"
+  },
+  "author": "Hardcore Engineering <hey@huly.io> (https://huly.dev)",
+  "contributors": [
+    "Andrey Platov <andrey@hardcoreeng.com>"
+  ]
 }
