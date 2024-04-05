@@ -6,7 +6,7 @@
  */
 
 export { add, bounds, mapSVG, mul, reduceVectors, round, sub, sum } from './math'
-export { parseSVG, renderSVG, type Element, type PathSegment, type Svg } from './svg'
+export { generateSVG, parseSVG, renderSVG, type Element, type PathSegment, type Svg } from './svg'
 export { decodeSVGR, encodeSVGR } from './svgr'
 export { type Pt } from './types'
 

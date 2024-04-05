@@ -286,8 +286,9 @@ export const generateSVG = (svg: Svg): string =>
   renderSVG(svg, {
     renderBox: (box) => `<svg viewBox="0 0 ${box[0]} ${box[1]}">`,
     renderBeginPath: () => '<path d="',
-    renderBeginSegment: (_: Pt, initial: Pt) => `M${initial[0]} ${initial[1]}`,
-    renderLineTo: (pt: Pt, segment: string) => segment + `l${pt[0]} ${pt[1]}`,
+    renderBeginSegment: (_: Pt, initial: Pt) => `M${initial[0]},${initial[1]}`,
+    renderLineTo: (pt: Pt, segment: string) =>
+      segment + (pt[0] < 0 ? `${pt[0]}` : `l${pt[0]}`) + (pt[1] < 0 ? `${pt[1]}` : `,${pt[1]}`),
     renderEndSegment: (_: boolean, element: string, segment: string) => element + segment + 'Z',
     renderEndPath: (svg, element) => svg + element + '" />',
     renderEndDocument: (svg) => svg + '</svg>',

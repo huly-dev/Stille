@@ -7,7 +7,7 @@
 
 import { bitInStream, fileInStream } from '@huly/bits'
 
-import { decodeSVGR } from 'svgripper'
+import { decodeSVGR, generateSVG } from 'svgripper'
 
 type Options = {
   binary?: boolean
@@ -18,5 +18,6 @@ export async function decode(file: string, log: (message: string) => void, optio
   log('decoding svgr format...')
   const svgr = await fileInStream(file)
   const svg = decodeSVGR(bitInStream(svgr), log)
-  console.log(svg)
+  const text = generateSVG(svg)
+  console.log(text)
 }
