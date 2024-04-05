@@ -32,11 +32,7 @@ export type HuffmanCodes = HuffmanCode[]
 
 type FrequencyTable = number[]
 
-const constructNodes = (frequencies: FrequencyTable) => {
-  const result = frequencies.map((frequency, symbol) => ({ symbol, frequency }))
-  result.push({ frequency: 1, symbol: -1 }) // EOF symbol
-  return result
-}
+const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequency, symbol) => ({ symbol, frequency }))
 
 const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
@@ -77,21 +73,14 @@ export const huffmanOutStream = (codes: HuffmanCodes, out: BitOutStream): Symbol
   },
   writeBits: out.writeBits,
   writeByte: out.writeByte,
-  close: () => {
-    const code = codes[-1]
-    out.writeBits(code.value, code.length)
-    out.close()
-  },
+  close: out.close,
 })
-
-export const EOF = -1
 
 export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): SymbolInStream => {
   const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
   const invertedCodes = new Map(invert)
 
   let buffer = 1
-  let eof = false
 
   return {
     readSymbol: () => {
@@ -99,34 +88,17 @@ export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): Symbol
         buffer = (buffer << 1) | input.readBits(1)
         const symbol = invertedCodes.get(buffer)
         if (symbol !== undefined) {
-          if (symbol === EOF) eof = true
           buffer = 1
           return symbol
         }
       }
     },
-    available: () => !eof && input.available(),
+    available: input.available,
     readBits: input.readBits,
     readByte: input.readByte,
     close: input.close,
   }
 }
-
-// export const huffmanDecode = (codes: HuffmanCodes, input: BitInStream, out: SymbolOutStream) => {
-//   const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
-//   const invertedCodes = new Map(invert)
-//   let buffer = 1
-
-//   while (input.available()) {
-//     buffer = (buffer << 1) | input.readBits(1)
-//     const symbol = invertedCodes.get(buffer)
-//     if (symbol !== undefined) {
-//       if (symbol === -1) break
-//       out.writeSymbol(symbol)
-//       buffer = 1
-//     }
-//   }
-// }
 
 export const countFrequencies = (data: number[], symbols: number): number[] =>
   data.reduce((freq, symbol) => {

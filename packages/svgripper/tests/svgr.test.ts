@@ -8,12 +8,12 @@
 import { expect, test } from 'bun:test'
 
 import {
-    bitInStream,
-    bitOutStream,
-    byteArrayInStream,
-    bytesCollector,
-    type SymbolInStream,
-    type SymbolOutStream,
+  bitInStream,
+  bitOutStream,
+  byteArrayInStream,
+  bytesCollector,
+  type SymbolInStream,
+  type SymbolOutStream,
 } from '@huly/bits'
 import { decodeSVGR, encodeSVGR, type Svg } from '../src'
 
@@ -47,5 +47,5 @@ test('encode / decode', () => {
   const input = bitInStream(byteArrayInStream(collector.result()))
   const decoded = decodeSVGR(input, (message) => console.log(message))
 
-  console.log(decoded)
+  expect(decoded).toEqual(svg)
 })

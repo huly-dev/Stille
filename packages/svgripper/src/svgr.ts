@@ -63,7 +63,7 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
   const freq = countFrequencies(symbols, alphabet)
   writeFrequencyTable(out, freq, log)
 
-  writeAbsolute(out, box)
+  writeAbsolute(out, svg.wh)
   writeAbsolute(out, min)
 
   const codes = generateHuffmanCodes(freq)
