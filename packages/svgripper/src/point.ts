@@ -10,7 +10,6 @@ import { add, inside, sub } from './math'
 import type { Pt } from './types'
 
 const MAX_ABSOLUTE_BITS = 13
-export const MAX_COORDINATE = (1 << MAX_ABSOLUTE_BITS) - 1
 
 export const writeAbsolute = (out: BitOutStream, pt: Pt) => {
   out.writeBits(Math.abs(pt[0]), MAX_ABSOLUTE_BITS)
@@ -63,6 +62,6 @@ export const pointInStream = (min: Pt, input: SymbolInStream): PointInStream => 
     ...input,
     readRelative,
     readAbsolute: () => readAbsolute(input),
-    readAny: (from: Pt) => (input.readBits(1) ? readAbsolute(input) : add(from, readRelative())),
+    readAny: (from: Pt) => (input.readBits(1) === 0 ? add(from, readRelative()) : readAbsolute(input)),
   }
 }

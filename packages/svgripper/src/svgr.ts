@@ -15,7 +15,7 @@ import {
 } from '@huly/bits'
 import { huffmanOutStream } from '@huly/bits/src/huffman'
 import { add, bounds, sub } from './math'
-import { MAX_COORDINATE, pointInStream, pointOutStream, readAbsolute, writeAbsolute } from './point'
+import { pointInStream, pointOutStream, readAbsolute, writeAbsolute } from './point'
 import { renderSVG, type Svg } from './svg'
 import type { Pt } from './types'
 
@@ -36,30 +36,10 @@ export const writeFrequencyTable = (out: BitOutStream, frequencies: number[], lo
 export const readFrequencyTable = (input: BitInStream, log: (message: string) => void): number[] => {
   const bitsPerFrequency = input.readBits(FREQUENCY_BITS)
   const count = input.readBits(ALPHABET_BITS)
-  const frequencies = Array.from({ length: count }, () => input.readBits(bitsPerFrequency))
+  log(`frequencies: ${count}, ${bitsPerFrequency} bits per frequency`)
 
-  log(`frequencies: ${frequencies}, ${bitsPerFrequency} bits per frequency`)
-  return frequencies
+  return Array.from({ length: count }, () => input.readBits(bitsPerFrequency))
 }
-
-///
-
-// export const segmentReader =
-//   (input: PointInStream) =>
-//   (current: Pt): { segment: PathSegment; current: Pt } => {
-//     let initial = input.readAny(current)
-//     const lineTo = []
-//     while (true) {
-//       const pt = input.readRelative()
-//       if (pt[0] === 0 && pt[1] === 0) break
-//       lineTo.push(p)
-//       current = add(initial, p)
-//     }
-//     return {
-//       segment: { initial, lineTo, closed: true },
-//       current,
-//     }
-//   }
 
 ///
 
@@ -77,25 +57,27 @@ export const encodeSVGR = (svg: Svg, out: BitOutStream, log: (message: string) =
   const alphabet = Math.max(box[0], box[1]) + 1
   log(`bounding box: min ${min}, max ${max}, box ${box}]`)
 
-  writeAbsolute(out, box)
-  writeAbsolute(out, min)
-
   const symbols = points.flatMap((pt) => sub(pt, min))
   log(`converted to ${alphabet} symbols in alphabet`)
 
   const freq = countFrequencies(symbols, alphabet)
   writeFrequencyTable(out, freq, log)
 
+  writeAbsolute(out, box)
+  writeAbsolute(out, min)
+
   const codes = generateHuffmanCodes(freq)
   const huffman = huffmanOutStream(codes, out)
 
   const pointOut = pointOutStream(min, max, huffman)
   renderSVG(svg, {
+    renderBeginPath: () => pointOut.writeBits(1, 1),
     renderBeginSegment: (last, initial) => pointOut.writeAny(last, initial),
     renderLineTo: (pt) => pointOut.writeRelative(pt),
-    renderEndSengment: () => pointOut.writeRelative([0, 0]),
-    renderEndPath: () => pointOut.writeAbsolute([MAX_COORDINATE, MAX_COORDINATE]),
+    renderEndSegment: () => pointOut.writeRelative([0, 0]),
+    // renderEndPath: () => pointOut.writeAbsolute([MAX_COORDINATE, MAX_COORDINATE]),
   })
+  pointOut.writeBits(0, 1)
   pointOut.close()
 }
 
@@ -105,14 +87,16 @@ export const decodeSVGR = (input: BitInStream, log: (message: string) => void): 
 
   const viewBox = readAbsolute(input)
   const min = readAbsolute(input)
+  log(`view box: ${viewBox}, min: ${min}`)
 
   const pointIn = pointInStream(min, huffmanInStream(codes, input))
   const segments = []
   let current: Pt = [0, 0]
 
   while (true) {
+    if (pointIn.readBits(1) === 0) break
     let initial = pointIn.readAny(current)
-    if (initial[0] === MAX_COORDINATE && initial[1] === MAX_COORDINATE) break
+    log(`initial: ${initial}`)
     const lineTo = []
     while (true) {
       const pt = pointIn.readRelative()
@@ -120,7 +104,8 @@ export const decodeSVGR = (input: BitInStream, log: (message: string) => void): 
       lineTo.push(pt)
       current = add(initial, pt)
     }
-    segments.push({ initial, lineTo, closed: true })
+    const segment = { initial, lineTo, closed: true }
+    segments.push(segment)
   }
 
   return {

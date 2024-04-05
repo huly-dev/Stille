@@ -84,11 +84,14 @@ export const huffmanOutStream = (codes: HuffmanCodes, out: BitOutStream): Symbol
   },
 })
 
+export const EOF = -1
+
 export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): SymbolInStream => {
   const invert = codes.map(({ value, length }, i) => [(1 << length) | value, i] as [number, number])
   const invertedCodes = new Map(invert)
 
   let buffer = 1
+  let eof = false
 
   return {
     readSymbol: () => {
@@ -96,14 +99,15 @@ export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): Symbol
         buffer = (buffer << 1) | input.readBits(1)
         const symbol = invertedCodes.get(buffer)
         if (symbol !== undefined) {
+          if (symbol === EOF) eof = true
           buffer = 1
           return symbol
         }
       }
     },
+    available: () => !eof && input.available(),
     readBits: input.readBits,
     readByte: input.readByte,
-    available: input.available,
     close: input.close,
   }
 }
