@@ -7,9 +7,7 @@
     "@types/bun": "latest",
     "@types/sax": "^1.2.7"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "scripts": {
     "build": "tsc",
     "test": "bun test"
@@ -29,7 +27,5 @@
     "url": "https://github.com/huly-dev/Stille.git"
   },
   "author": "Hardcore Engineering <hey@huly.io> (https://huly.dev)",
-  "contributors": [
-    "Andrey Platov <andrey@hardcoreeng.com>"
-  ]
+  "contributors": ["Andrey Platov <andrey@hardcoreeng.com>"]
 }
