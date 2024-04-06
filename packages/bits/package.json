@@ -9,7 +9,7 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "version": "1.0.0-alpha.1+20240406-sha.33bc4e6",
+  "version": "1.0.0-alpha.1+20240406-sha.d1f13fc",
   "description": "Huly® Platform™ — Development Tools and Libraries",
   "homepage": "https://huly.dev",
   "license": "EPL-2.0",
