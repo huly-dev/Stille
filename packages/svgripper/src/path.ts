@@ -33,11 +33,9 @@ const moveTo = (relative: boolean, xy: Pt): MoveTo => ({ command: 'm', relative,
 
 interface ClosePath extends Command<'z'> {
   readonly command: 'z'
-  readonly relative: false
-  readonly xy: [0, 0]
 }
 
-const closePath: ClosePath = { command: 'z', relative: false, xy: [0, 0] }
+const closePath = (relative: boolean, xy?: Pt): ClosePath => ({ command: 'z', relative, xy: xy || [0, 0] })
 
 interface CurveTo extends Command<'c'> {
   readonly command: 'c'
@@ -103,21 +101,27 @@ type CommandMap = {
   a: EllipticalArc
 }
 
-type TransformFunction<K extends Cid> = (c: CommandMap[K], f: (p: Pt) => Pt, makeRelative: boolean) => CommandMap[K]
+type TransformFunction<K extends Cid> = (c: CommandMap[K], f: (p: Pt) => Pt, flip: boolean) => Command<K>
 
 const transform: { [K in Cid]: TransformFunction<K> } = {
-  l: (c, f, m) => lineTo(c.relative || m, f(c.xy)),
-  m: (c, f, m) => moveTo(c.relative || m, f(c.xy)),
-  z: () => closePath,
-  c: (c, f, m) => curveTo(c.relative || m, f(c.xy1), f(c.xy2), f(c.xy)),
-  s: (c, f, m) => smoothCurveTo(c.relative || m, f(c.xy2), f(c.xy)),
-  q: (c, f, m) => quadraticCurveTo(c.relative || m, f(c.xy1), f(c.xy)),
-  t: (c, f, m) => smoothQuadraticCurveTo(c.relative || m, f(c.xy)),
-  a: (c, f, m) => ellipticalArc(c.relative || m, f(c.radii), c.rotation, c.largeArc, c.sweep, f(c.xy)),
+  l: (c, f, m) => lineTo(c.relative !== m, f(c.xy)),
+  m: (c, f, m) => moveTo(c.relative !== m, f(c.xy)),
+  z: (c, f, m) => closePath(c.relative !== m, f(c.xy)),
+  c: (c, f, m) => curveTo(c.relative !== m, f(c.xy1), f(c.xy2), f(c.xy)),
+  s: (c, f, m) => smoothCurveTo(c.relative !== m, f(c.xy2), f(c.xy)),
+  q: (c, f, m) => quadraticCurveTo(c.relative !== m, f(c.xy1), f(c.xy)),
+  t: (c, f, m) => smoothQuadraticCurveTo(c.relative !== m, f(c.xy)),
+  a: (c, f, m) => ellipticalArc(c.relative !== m, f(c.radii), c.rotation, c.largeArc, c.sweep, f(c.xy)),
 }
 
-export const toRelative = <K extends Cid>(c: CommandMap[K], from: Pt): CommandMap[K] =>
-  c.relative ? c : transform[c.command as K](c, (pt) => sub(pt, from), true)
+export const applyFunction = <K extends Cid>(c: Command<K>, f: (p: Pt) => Pt): Command<K> =>
+  transform[c.command](c as unknown as CommandMap[K], f, false)
+
+export const toRelative = <K extends Cid>(c: Command<K>, from: Pt): Command<K> =>
+  c.relative ? c : transform[c.command](c as unknown as CommandMap[K], (pt) => sub(pt, from), true)
+
+export const toAbsolute = <K extends Cid>(c: Command<K>, from: Pt): Command<K> =>
+  c.relative ? transform[c.command](c as unknown as CommandMap[K], (pt) => add(pt, from), true) : c
 
 type CreateFunction<K extends Cid> = (relative: boolean, next: () => number) => CommandMap[K]
 
@@ -126,7 +130,7 @@ const point = (next: () => number): Pt => [next(), next()]
 const ctors: { [K in Cid]: CreateFunction<K> } = {
   l: (relative, next) => lineTo(relative, point(next)),
   m: (relative, next) => moveTo(relative, point(next)),
-  z: () => closePath,
+  z: (relative) => closePath(relative),
   c: (relative, next) => curveTo(relative, point(next), point(next), point(next)),
   s: (relative, next) => smoothCurveTo(relative, point(next), point(next)),
   q: (relative, next) => quadraticCurveTo(relative, point(next), point(next)),
@@ -153,13 +157,13 @@ const argsToVector: { [K in Cid]: ToVectorFunction<K> } = {
 export const toVectorArgs = <K extends Cid>(c: CommandMap[K]): number[] => argsToVector[c.command as K](c)
 
 const toStringFirst = (n: number): string => n.toFixed(0)
-const toStringNext = (n: number): string => (n >= 0 ? ' ' : '') + n.toFixed(0)
+const toStringNext = (n: number): string => (n >= 0 ? ',' : '') + n.toFixed(0)
 
 export const toString = <K extends Cid>(c: Command<K>): string => {
   const k = c.command as K
   const cmd = k === 'l' ? '' : c.relative ? k : k.toUpperCase()
   const args = argsToVector[k](c as unknown as CommandMap[K])
-    .map((n, i) => (i === 0 ? toStringFirst : toStringNext)(n))
+    .map((n, i) => (i === 0 && k !== 'l' ? toStringFirst : toStringNext)(n))
     .join('')
   return cmd + args
 }

@@ -54,6 +54,12 @@ const createOutput = (options: Options) => {
 }
 
 const scaleSVG = (svg: Svg, scale: Pt): Svg => {
+  const s = renderSVG(svg, {
+    box: (box: Pt) => ({ result: { xy: [0, 0], wh: mul(box, scale), elements: [] }, from: [0, 0] }),
+    beginPath: (ctx) => ({ result: { name: 'path', segments: [] }, from: ctx.from }),
+    pathCommand: (ctx, cmd) => {
+    })
+
   let current = [0, 0] as Pt
   let currentInt = [0, 0] as Pt
 

@@ -8,7 +8,19 @@
 
 import { SAXParser } from 'sax'
 
-import { apply, create, lineTo, toString, type Cid, type Command, type PathData } from './path'
+import { mul, round } from './math'
+import {
+  apply,
+  applyFunction,
+  create,
+  lineTo,
+  toAbsolute,
+  toRelative,
+  toString,
+  type Cid,
+  type Command,
+  type PathData,
+} from './path'
 import type { Pt } from './types'
 
 export type ElementName = 'path'
@@ -174,15 +186,15 @@ type RenderContext<E> = {
 export interface SvgRenderer<S, E> {
   box: (box: Pt) => RenderContext<S>
   beginPath: (ctx: RenderContext<S>) => RenderContext<E>
-  pathCommand: (context: RenderContext<E>, command: Command<Cid>) => RenderContext<E>
-  endPath: (context: RenderContext<E>) => RenderContext<S>
+  pathCommand: (ctx: RenderContext<E>, c: Command<Cid>) => RenderContext<E>
+  endPath: (svg: RenderContext<S>, ctx: RenderContext<E>) => RenderContext<S>
   endDocument: (svg: RenderContext<S>) => S
 }
 
 export const renderSVG = <S, E>(svg: Svg, renderer: SvgRenderer<S, E>): S =>
   renderer.endDocument(
     svg.elements.reduce(
-      (ctx, path) => renderer.endPath(path.d.reduce(renderer.pathCommand, renderer.beginPath(ctx))),
+      (ctx, path) => renderer.endPath(ctx, path.d.reduce(renderer.pathCommand, renderer.beginPath(ctx))),
       renderer.box(svg.wh),
     ),
   )
@@ -192,6 +204,58 @@ export const generateSVG = (svg: Svg): string =>
     box: (box) => ({ result: `<svg viewBox="0 0 ${box[0]} ${box[1]}">`, from: [0, 0] }),
     beginPath: (ctx) => ({ result: '<path d="', from: ctx.from }),
     pathCommand: (ctx, c) => ({ result: ctx.result + toString(c), from: apply(c, ctx.from) }),
-    endPath: (ctx) => ({ result: ctx.result + '" />', from: ctx.from }),
-    endDocument: (ctx) => ctx.result + '</svg>',
+    endPath: (svg, ctx) => ({ result: svg.result + ctx.result + '" />', from: ctx.from }),
+    endDocument: (svg) => svg.result + '</svg>',
+  })
+
+export const scaleSVG = (svg: Svg, scale: Pt) =>
+  renderSVG(svg, {
+    box: (box: Pt) => ({ result: { xy: [0, 0], wh: mul(box, scale), elements: [] } as Svg, from: [0, 0] }),
+    beginPath: (ctx) => ({ result: [] as PathData, from: ctx.from }),
+    pathCommand: (ctx, c) => {
+      const abs = toAbsolute(c, ctx.from)
+      const scaled = applyFunction(abs, (p) => mul(p, scale))
+      ctx.from = apply(c, ctx.from)
+      ctx.result.push(applyFunction(scaled, round))
+      return ctx
+    },
+    endPath: (svg, ctx) => {
+      svg.result.elements.push({ name: 'path', d: ctx.result })
+      return svg
+    },
+    endDocument: (svg) => svg.result,
+  })
+
+// export const toAbsoluteSVG = (svg: Svg) =>
+//   renderSVG(svg, {
+//     box: (box: Pt) => ({ result: { xy: [0, 0], wh: box, elements: [] } as Svg, from: [0, 0] }),
+//     beginPath: (ctx) => ({ result: [] as PathData, from: ctx.from }),
+//     pathCommand: (ctx, c) => {
+//       const abs = toAbsolute(c, ctx.from)
+//       ctx.from = apply(abs, ctx.from)
+//       ctx.result.push(abs)
+//       return ctx
+//     },
+//     endPath: (svg, ctx) => {
+//       svg.result.elements.push({ name: 'path', d: ctx.result })
+//       return svg
+//     },
+//     endDocument: (svg) => svg.result,
+//   })
+
+export const toRelativeSVG = (svg: Svg) =>
+  renderSVG(svg, {
+    box: (box: Pt) => ({ result: { xy: [0, 0], wh: box, elements: [] } as Svg, from: [0, 0] }),
+    beginPath: (ctx) => ({ result: [] as PathData, from: ctx.from }),
+    pathCommand: (ctx, c) => {
+      const rel = toRelative(c, ctx.from)
+      ctx.from = apply(rel, ctx.from)
+      ctx.result.push(rel)
+      return ctx
+    },
+    endPath: (svg, ctx) => {
+      svg.result.elements.push({ name: 'path', d: ctx.result })
+      return svg
+    },
+    endDocument: (svg) => svg.result,
   })
