@@ -8,37 +8,14 @@
 
 import { SAXParser } from 'sax'
 
-import { add, sub } from './math'
+import { apply, create, lineTo, toString, type Cid, type Command, type PathData } from './path'
 import type { Pt } from './types'
-
-export type CID = 'M' | 'm' | 'L' | 'l' | 'Z' | 'z'
-export type ExtendedCommand = 'curveto' | 'shorthand'
-
-export type Shorthand = {
-  command: 'shorthand'
-  controlPoint: Pt
-}
-
-export type CurveTo = {
-  command: 'curveto'
-  controlPoint1: Pt
-  controlPoint2: Pt
-}
-
-export type Extended = CurveTo | Shorthand
-
-export type PathSegment = {
-  initial: Pt // absolute
-  lineTo: Pt[] // relative
-  extended?: Pt[] // relative
-  closed: boolean
-}
 
 export type ElementName = 'path'
 
 export type Path = {
   readonly name: 'path'
-  readonly segments: PathSegment[]
+  readonly d: PathData
 }
 
 export type Element = Path
@@ -61,7 +38,8 @@ type TokenNumber = {
 
 type TokenCID = {
   type: TokenType.CID
-  value: CID
+  value: Cid
+  relative: boolean
 }
 
 type Token = TokenNumber | TokenCID
@@ -86,8 +64,19 @@ export const tokenize = (d: string): Token[] => {
       case 'l':
       case 'Z':
       case 'z':
+      case 'C':
+      case 'c':
+      case 'S':
+      case 's':
+      case 'Q':
+      case 'q':
+      case 'T':
+      case 't':
+      case 'A':
+      case 'a':
         flushNumber()
-        result.push({ type: TokenType.CID, value: c as CID })
+        const lowerCase = c.toLowerCase()
+        result.push({ type: TokenType.CID, value: lowerCase as Cid, relative: c === lowerCase })
         break
       case '0':
       case '1':
@@ -113,113 +102,36 @@ export const tokenize = (d: string): Token[] => {
         flushNumber()
         break
       default:
-        throw new Error('Unhandled cahracter ' + d[i])
+        throw new Error('Unhandled character ' + d[i])
     }
   }
   return result
 }
 
 export const parsePath = (d: Token[]): Path => {
-  const result: Path = {
-    name: 'path',
-    segments: [],
+  let i = 0
+  const next = () => d[i++]
+  const val = (t: Token): number => {
+    if (t.type !== TokenType.Number) throw new Error('Expected number')
+    return t.value
   }
+  const nextVal = (): number => val(next())
 
-  const iter = () => {
-    let i = 0
-    return {
-      next: () => d[i++],
-      unread: () => i--,
-    }
-  }
-
-  const i = iter()
-
-  const toFloat = (token: Token): number => {
-    if (token.type !== TokenType.Number) throw new Error('Expected a number')
-    return token.value
-  }
-
-  let current: Pt | undefined
+  let relative = false
+  const path: PathData = []
 
   while (true) {
-    const initial = i.next()
-    if (initial === undefined) return result
-    if (initial.type !== TokenType.CID) throw new Error('Expected a command')
+    const t = next()
+    if (t === undefined) break
 
-    const value = initial.value
-    if (value !== 'M' && value !== 'm') throw new Error('Expected a move-to command')
-
-    let relative = value === 'm'
-    const x = toFloat(i.next())
-    const y = toFloat(i.next())
-
-    if (relative) {
-      if (current === undefined) throw new Error('No current point')
-      current = add(current, [x, y])
-    } else current = [x, y]
-
-    if (current![0] < 0 || current![1] < 0) {
-      console.log('Negative', d)
-      throw new Error('Negative')
+    if (t.type === TokenType.Number)
+      path.push(lineTo(relative, [val(t), nextVal()])) // pure coordinates -> treat as a lineto
+    else {
+      relative = t.relative
+      path.push(create(t.value, relative, nextVal))
     }
-
-    // let final = [initialX, initialY] // absolute
-
-    const segment: PathSegment = {
-      initial: current!, // absolute
-      lineTo: [], // relative
-      closed: false,
-    }
-
-    function push(lineTo: Pt, relative: boolean) {
-      if (relative) {
-        segment.lineTo.push(lineTo)
-        current = add(current!, lineTo)
-      } else {
-        segment.lineTo.push(sub(lineTo, current!))
-        current = lineTo
-      }
-    }
-
-    let done = false
-
-    while (!done) {
-      const next = i.next()
-      if (next === undefined) return result
-
-      if (next.type === TokenType.Number) {
-        // M continuation -> treat as a lineto
-        const x = toFloat(next)
-        const y = toFloat(i.next())
-        push([x, y], relative)
-        continue
-      }
-
-      const command = next.value
-
-      switch (command) {
-        case 'L':
-        case 'l':
-          relative = command === 'l'
-          const x = toFloat(i.next())
-          const y = toFloat(i.next())
-          push([x, y], relative)
-          break
-
-        case 'Z':
-        case 'z':
-          segment.closed = true
-          done = true
-          break
-
-        default:
-          throw new Error('Unexpected command ' + command)
-      }
-    }
-
-    result.segments.push(segment)
   }
+  return { name: 'path', d: path }
 }
 
 export function parseSVG(svg: string): Svg {
@@ -231,7 +143,7 @@ export function parseSVG(svg: string): Svg {
   parser.onopentag = (node) => {
     switch (node.name) {
       case 'svg':
-        const vb = node.attributes['viewbox'] as string
+        const vb = node.attributes['viewBox'] as string
         viewBox = vb.split(' ').map((v) => parseFloat(v))
         break
       case 'path':
@@ -254,43 +166,32 @@ export function parseSVG(svg: string): Svg {
   }
 }
 
-export interface SvgRenderer<S, E, G> {
-  renderBox: (box: Pt) => S
-  renderBeginPath: () => E
-  renderBeginSegment: (last: Pt, initial: Pt) => G
-  renderLineTo: (pt: Pt, segment: G) => G
-  renderEndSegment: (closed: boolean, element: E, segment: G) => E
-  renderEndPath: (svg: S, element: E) => S
-  renderEndDocument: (svg: S) => S
+type RenderContext<E> = {
+  from: Pt
+  result: E
 }
 
-export const renderSVG = <S, E, G>(svg: Svg, renderer: SvgRenderer<S, E, G>): S => {
-  let result = renderer.renderBox(svg.wh)
-  svg.elements.forEach((element) => {
-    let e = renderer.renderBeginPath()
-    let last: Pt = [0, 0]
-    element.segments.forEach((segment) => {
-      let g = renderer.renderBeginSegment(last, segment.initial)
-      last = segment.initial
-      segment.lineTo.forEach((pt) => {
-        g = renderer.renderLineTo(pt, g)
-        last = add(last, pt)
-      })
-      e = renderer.renderEndSegment(segment.closed, e, g)
-    })
-    result = renderer.renderEndPath(result, e)
-  })
-  return renderer.renderEndDocument(result)
+export interface SvgRenderer<S, E> {
+  box: (box: Pt) => RenderContext<S>
+  beginPath: (ctx: RenderContext<S>) => RenderContext<E>
+  pathCommand: (context: RenderContext<E>, command: Command<Cid>) => RenderContext<E>
+  endPath: (context: RenderContext<E>) => RenderContext<S>
+  endDocument: (svg: RenderContext<S>) => S
 }
+
+export const renderSVG = <S, E>(svg: Svg, renderer: SvgRenderer<S, E>): S =>
+  renderer.endDocument(
+    svg.elements.reduce(
+      (ctx, path) => renderer.endPath(path.d.reduce(renderer.pathCommand, renderer.beginPath(ctx))),
+      renderer.box(svg.wh),
+    ),
+  )
 
 export const generateSVG = (svg: Svg): string =>
   renderSVG(svg, {
-    renderBox: (box) => `<svg viewBox="0 0 ${box[0]} ${box[1]}">`,
-    renderBeginPath: () => '<path d="',
-    renderBeginSegment: (_: Pt, initial: Pt) => `M${initial[0]},${initial[1]}`,
-    renderLineTo: (pt: Pt, segment: string) =>
-      segment + (pt[0] < 0 ? `${pt[0]}` : `l${pt[0]}`) + (pt[1] < 0 ? `${pt[1]}` : `,${pt[1]}`),
-    renderEndSegment: (_: boolean, element: string, segment: string) => element + segment + 'Z',
-    renderEndPath: (svg, element) => svg + element + '" />',
-    renderEndDocument: (svg) => svg + '</svg>',
+    box: (box) => ({ result: `<svg viewBox="0 0 ${box[0]} ${box[1]}">`, from: [0, 0] }),
+    beginPath: (ctx) => ({ result: '<path d="', from: ctx.from }),
+    pathCommand: (ctx, c) => ({ result: ctx.result + toString(c), from: apply(c, ctx.from) }),
+    endPath: (ctx) => ({ result: ctx.result + '" />', from: ctx.from }),
+    endDocument: (ctx) => ctx.result + '</svg>',
   })
