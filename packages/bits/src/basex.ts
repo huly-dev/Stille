@@ -43,7 +43,7 @@ function baseXOutStream(base: number, bytesBuffer: number, baseBuffer: number, o
   }
 }
 
-const special = '\'"`'
+const special = '\'\\"'
 const firstChar = 0x21
 const lastChar = 0x7e
 const base91 = lastChar - firstChar + 1 - special.length

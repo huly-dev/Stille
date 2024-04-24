@@ -50,7 +50,7 @@ type TokenNumber = {
 
 type TokenCID = {
   type: TokenType.CID
-  value: Cid
+  value: Cid | 'v' | 'h'
   relative: boolean
 }
 
@@ -86,6 +86,10 @@ export const tokenize = (d: string): Token[] => {
       case 't':
       case 'A':
       case 'a':
+      case 'H':
+      case 'h':
+      case 'V':
+      case 'v':
         flushNumber()
         const lowerCase = c.toLowerCase()
         result.push({ type: TokenType.CID, value: lowerCase as Cid, relative: c === lowerCase })
@@ -100,8 +104,13 @@ export const tokenize = (d: string): Token[] => {
       case '7':
       case '8':
       case '9':
-      case '.':
         currentNumber += c
+        break
+      case '.':
+        if (currentNumber.indexOf('.') !== -1) {
+          flushNumber()
+          currentNumber = '0.'
+        } else currentNumber += c
         break
       case '-':
         if (currentNumber !== '') {
@@ -124,7 +133,7 @@ export const parsePath = (d: Token[]): Path => {
   let i = 0
   const next = () => d[i++]
   const val = (t: Token): number => {
-    if (t.type !== TokenType.Number) throw new Error('Expected number')
+    if (t.type !== TokenType.Number) throw new Error(`Expected number, ${t.value}`)
     return t.value
   }
   const nextVal = (): number => val(next())
@@ -140,7 +149,16 @@ export const parsePath = (d: Token[]): Path => {
       path.push(lineTo(relative, [val(t), nextVal()])) // pure coordinates -> treat as a lineto
     else {
       relative = t.relative
-      path.push(create(t.value, relative, nextVal))
+      switch (t.value) {
+        case 'h':
+          path.push(lineTo(relative, [nextVal(), 0]))
+          break
+        case 'v':
+          path.push(lineTo(relative, [0, nextVal()]))
+          break
+        default:
+          path.push(create(t.value, relative, nextVal))
+      }
     }
   }
   return { name: 'path', d: path }
@@ -208,7 +226,7 @@ export const generateSVG = (svg: Svg): string =>
     endDocument: (svg) => svg.result + '</svg>',
   })
 
-export const scaleSVG = (svg: Svg, scale: Pt) =>
+export const toAbsoluteSVG = (svg: Svg, scale: Pt) =>
   renderSVG(svg, {
     box: (box: Pt) => ({ result: { xy: [0, 0], wh: mul(box, scale), elements: [] } as Svg, from: [0, 0] }),
     beginPath: (ctx) => ({ result: [] as PathData, from: ctx.from }),
@@ -225,23 +243,6 @@ export const scaleSVG = (svg: Svg, scale: Pt) =>
     },
     endDocument: (svg) => svg.result,
   })
-
-// export const toAbsoluteSVG = (svg: Svg) =>
-//   renderSVG(svg, {
-//     box: (box: Pt) => ({ result: { xy: [0, 0], wh: box, elements: [] } as Svg, from: [0, 0] }),
-//     beginPath: (ctx) => ({ result: [] as PathData, from: ctx.from }),
-//     pathCommand: (ctx, c) => {
-//       const abs = toAbsolute(c, ctx.from)
-//       ctx.from = apply(abs, ctx.from)
-//       ctx.result.push(abs)
-//       return ctx
-//     },
-//     endPath: (svg, ctx) => {
-//       svg.result.elements.push({ name: 'path', d: ctx.result })
-//       return svg
-//     },
-//     endDocument: (svg) => svg.result,
-//   })
 
 export const toRelativeSVG = (svg: Svg) =>
   renderSVG(svg, {

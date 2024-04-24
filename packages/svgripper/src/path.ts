@@ -168,6 +168,11 @@ export const toString = <K extends Cid>(c: Command<K>): string => {
   return cmd + args
 }
 
-export const apply = (c: Command<Cid>, from: Pt) => (c.relative ? add(from, c.xy) : c.xy)
+const cmd: { [K in Cid]: number } = { l: 0, m: 1, c: -1, a: 2, z: -2, q: 3, t: -3, s: 4 }
 
-const cmd: { [K in Cid]: number } = { l: 0, m: 1, z: -1, c: 2, s: -2, q: 3, t: -3, a: 4 }
+export const toVector = <K extends Cid>(c: Command<K>): number[] => [
+  cmd[c.command],
+  ...toVectorArgs(c as unknown as CommandMap[K]),
+]
+
+export const apply = (c: Command<Cid>, from: Pt) => (c.relative ? add(from, c.xy) : c.xy)

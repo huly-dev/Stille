@@ -10,10 +10,11 @@ export { base91OutStream } from './basex'
 export { bitInStream, bitOutStream, numberOfBits, type BitInStream, type BitOutStream } from './bitstream'
 export { fileInStream, fileOutStream } from './filestream'
 export {
-  countFrequencies,
+  frequencyTable,
   generateHuffmanCodes,
   huffmanInStream,
   huffmanOutStream,
+  type FrequencyTable,
   type HuffmanCodes,
   type SymbolInStream,
   type SymbolOutStream,

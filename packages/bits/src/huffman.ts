@@ -31,9 +31,26 @@ export type HuffmanCode = {
 type HuffmanTree = HuffmanNode
 export type HuffmanCodes = HuffmanCode[]
 
-type FrequencyTable = number[]
+export type FrequencyTable = {
+  frequencies: number[]
+  indexOffset: number
+}
 
-const constructNodes = (frequencies: FrequencyTable) => frequencies.map((frequency, symbol) => ({ symbol, frequency }))
+export const frequencyTable = (data: number[]): FrequencyTable => {
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const symbols = max - min + 1
+  return {
+    frequencies: data.reduce((freq, symbol) => {
+      freq[symbol - min]++
+      return freq
+    }, new Array(symbols).fill(0)),
+    indexOffset: min,
+  }
+}
+
+const constructNodes = (table: FrequencyTable) =>
+  table.frequencies.map((frequency, i) => ({ symbol: i + table.indexOffset, frequency }))
 
 const buildHuffmanTree = (frequencies: FrequencyTable): HuffmanTree => {
   const queue: HuffmanNode[] = constructNodes(frequencies).sort((a, b) => b.frequency - a.frequency)
@@ -69,6 +86,7 @@ export const generateHuffmanCodes = (frequencies: FrequencyTable): HuffmanCodes 
 
 export const huffmanOutStream = (codes: HuffmanCodes, out: BitOutStream): SymbolOutStream => ({
   writeSymbol: (symbol: number) => {
+    if (!Number.isInteger(symbol)) throw new Error('symbol must be an integer')
     const code = codes[symbol]
     out.writeBits(code.value, code.length)
   },
@@ -100,9 +118,3 @@ export const huffmanInStream = (codes: HuffmanCodes, input: BitInStream): Symbol
     close: input.close,
   }
 }
-
-export const countFrequencies = (data: number[], symbols: number): number[] =>
-  data.reduce((freq, symbol) => {
-    freq[symbol]++
-    return freq
-  }, new Array(symbols).fill(0))
